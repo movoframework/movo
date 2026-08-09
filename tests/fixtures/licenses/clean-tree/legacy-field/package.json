@@ -1,0 +1,9 @@
+{
+  "name": "legacy-field",
+  "version": "1.2.3",
+  "licenses": [
+    {
+      "type": "BSD-3-Clause"
+    }
+  ]
+}

@@ -1,0 +1,74 @@
+name: Bug report
+description: Something in Movo behaves incorrectly
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please do **not** report security vulnerabilities here — see
+        [SECURITY.md](../blob/main/SECURITY.md).
+
+        If the problem is an upstream `@x402/*` change in shape or behaviour, use the
+        **Protocol drift** template instead.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you expected, and what happened instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: |
+        The smallest code or command sequence that reproduces this. A repository link is ideal.
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: |
+        Output of `node --version`, `pnpm --version`, and the `@movo/*` and `@x402/*` versions
+        you have installed. If `movo doctor` exists in your version, paste its output.
+      render: shell
+    validations:
+      required: true
+
+  - type: input
+    id: network
+    attributes:
+      label: Network
+      description: e.g. `stellar:testnet`, `stellar:pubnet`, or not applicable.
+      placeholder: stellar:testnet
+
+  - type: input
+    id: facilitator
+    attributes:
+      label: Facilitator
+      description: The facilitator URL, or `in-process` / `mock`.
+      placeholder: https://www.x402.org/facilitator
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or error output
+      description: |
+        **Redact before pasting.** Never include a private key, a seed, a facilitator API key,
+        or a raw payment payload or header.
+      render: shell
+
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: Confirmations
+      options:
+        - label: I have redacted all secrets, keys, payment payloads and headers.
+          required: true
+        - label: This is not a security vulnerability report.
+          required: true

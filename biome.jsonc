@@ -1,0 +1,92 @@
+{
+  "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+
+  // This file is `biome.jsonc`, not `biome.json`, for one reason: Biome parses `biome.json`
+  // as strict JSON and, on encountering a comment, silently truncates the configuration at
+  // that point rather than failing. The narrow-waist rule below is the most important gate in
+  // the repository, so it must not live in a file where a comment can quietly disable it.
+  // Biome discovers `biome.jsonc` automatically; no flag or script change is needed.
+
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+
+  "files": {
+    "includes": ["**", "!**/dist", "!**/node_modules", "!pnpm-lock.yaml", "!tests/fixtures"]
+  },
+
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 100
+  },
+
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "double",
+      "semicolons": "always",
+      "trailingCommas": "all"
+    }
+  },
+
+  // ─── THE NARROW WAIST ──────────────────────────────────────────────────────────────────
+  //
+  // `style/noRestrictedImports` below forbids every `@x402/*` import anywhere in the
+  // repository, and the `overrides` block at the bottom of this file re-permits it in exactly
+  // one directory: `packages/core/src/protocol/**`.
+  //
+  // WHY: `@x402/*` is the protocol source of truth. It ships roughly weekly and its
+  // cross-package pins are `~`-tight. Without this rule, an upstream breaking change would
+  // surface as compile errors scattered across seven packages, with no single place to absorb
+  // them. With it, upstream SDK churn is isolated to one directory — one file to read, one
+  // file to edit, one diff to review, and one place from which `docs/COMPATIBILITY.md` can be
+  // derived. It is also what makes the "Movo reimplements no protocol primitive" claim
+  // mechanically checkable rather than a promise.
+  //
+  // See ADR-0004, and spec §1.5 P2, §1.8 D1 and §4.2 invariant 3.
+  // Proven to fire by `tests/unit/narrow-waist.test.ts` — a rule nobody has watched fail is
+  // indistinguishable from a rule that does not work.
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "preset": "recommended",
+      "complexity": {
+        // Disabled because it contradicts the TypeScript configuration. `process.env.FOO` is
+        // rejected by `noPropertyAccessFromIndexSignature` (tsconfig.base.json), which is the
+        // stricter and more useful of the two rules: it forces an explicit acknowledgement
+        // that an environment variable may be absent. Bracket access stays.
+        "useLiteralKeys": "off"
+      },
+      "style": {
+        "noRestrictedImports": {
+          "level": "error",
+          "options": {
+            "patterns": [
+              {
+                "group": ["@x402/*", "@x402/**"],
+                "message": "MOVO NARROW WAIST (ADR-0004, spec §4.2 invariant 3): only files under packages/core/src/protocol/** may import from @x402/*. Re-export what you need from that module and import it from @movo/core instead. This boundary is what confines upstream SDK churn to a single directory."
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+
+  "overrides": [
+    {
+      // The one permitted import site in the monorepo.
+      "includes": ["packages/core/src/protocol/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": "off"
+          }
+        }
+      }
+    }
+  ]
+}

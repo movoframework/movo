@@ -1,0 +1,55 @@
+name: Feature request
+description: Propose a capability Movo should add
+labels: ["enhancement", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Movo composes over the official `@x402/*` packages and adds the project, diagnostics
+        and tooling layer around them. A request that amounts to renaming or re-exporting
+        something upstream already provides will be declined — not out of stubbornness, but
+        because a second name for the same wire object doubles the version-coupling surface.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What are you trying to do, and where does Movo get in the way today?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: What should Movo do? Sketch the API if you have one in mind.
+    validations:
+      required: true
+
+  - type: textarea
+    id: upstream
+    attributes:
+      label: Why upstream cannot do this
+      description: |
+        Does `@x402/core`, `@x402/stellar`, `@x402/express`, `@x402/extensions` or `@x402/fetch`
+        already provide this or something close? If so, name the export and explain what is
+        missing. If you have checked and found nothing, say which declaration files you read.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Including doing nothing, or solving it in your own project.
+
+  - type: dropdown
+    id: track
+    attributes:
+      label: Which track does this belong to?
+      options:
+        - Core framework (project model, diagnostics, testing, CLI)
+        - Facilitator or discovery catalog (the gated SCF track)
+        - Not sure
+    validations:
+      required: true

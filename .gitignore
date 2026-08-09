@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+*.tsbuildinfo
+
+# Test / tooling output
+coverage/
+.vitest/
+
+# Secrets — never commit any of these.
+# Movo never accepts a payer private key server-side (see SECURITY.md); these
+# entries exist so that a developer's own testnet keys cannot leak by accident.
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+secrets/
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json

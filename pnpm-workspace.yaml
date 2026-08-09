@@ -1,0 +1,10 @@
+packages:
+  - "packages/*"
+  - "apps/*"
+
+# Only these packages are permitted to run install lifecycle scripts. Everything
+# else installs inert. This is a supply-chain control (spec §14): a malicious
+# transitive dependency cannot execute code at install time unless it is named here.
+onlyBuiltDependencies:
+  - "@biomejs/biome"
+  - "esbuild"

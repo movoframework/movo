@@ -1,0 +1,24 @@
+{
+  "name": "@movo/testing",
+  "version": "0.0.0",
+  "description": "Facilitator fixtures, the payment failure matrix, harness and assertion matchers for Movo apps",
+  "license": "Apache-2.0",
+  "type": "module",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=22"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
+}

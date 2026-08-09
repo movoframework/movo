@@ -1,0 +1,38 @@
+{
+  "name": "movo",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "description": "The project framework and operations toolkit for machine-payable Stellar APIs",
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "pnpm@10.23.0",
+  "scripts": {
+    "build": "tsc --build",
+    "clean": "tsc --build --clean",
+    "typecheck": "tsc --build && tsc -p tsconfig.check.json",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "test": "vitest run --project unit --project integration",
+    "test:unit": "vitest run --project unit",
+    "test:integration": "vitest run --project integration",
+    "test:e2e": "vitest run --project e2e",
+    "test:conformance": "vitest run --project conformance",
+    "check:licenses": "node scripts/check-licenses.ts",
+    "check:track-isolation": "node scripts/check-track-isolation.ts",
+    "generate:compat": "node scripts/generate-compatibility.ts"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.7",
+    "@changesets/cli": "2.31.1",
+    "@types/node": "24.10.1",
+    "@x402/express": "2.21.0",
+    "@x402/extensions": "2.21.0",
+    "@x402/fetch": "2.21.0",
+    "@x402/stellar": "2.21.0",
+    "typescript": "7.0.2",
+    "vitest": "4.1.10"
+  }
+}

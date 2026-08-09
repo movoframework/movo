@@ -1,0 +1,75 @@
+name: Protocol drift
+description: An upstream @x402/* or Stellar change in shape, behaviour or wire format
+labels: ["protocol-drift", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Movo pins `@x402/*` exactly and confines every `@x402/*` import to
+        `packages/core/src/protocol/**`, precisely so that upstream drift is **tracked
+        deliberately rather than absorbed silently**. This template is how that tracking
+        starts. Thank you for filing it separately from an ordinary bug.
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind of drift
+      options:
+        - Type or export shape changed
+        - Runtime behaviour changed
+        - Wire format changed (headers, 402 body, payload)
+        - Facilitator `/supported` response changed
+        - Bazaar discovery convention changed
+        - Stellar network, asset or scheme change
+        - Package renamed, split, or deprecated
+    validations:
+      required: true
+
+  - type: input
+    id: package
+    attributes:
+      label: Upstream package and versions
+      description: Which package, and between which two versions did the behaviour change?
+      placeholder: "@x402/core: 2.21.0 → 2.22.0"
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: |
+        **Declaration files or observed wire output, not documentation.** Paste the relevant
+        excerpt from `node_modules/@x402/*/dist/**/*.d.mts`, an upstream commit or release
+        note, or a captured request/response. Documentation snippets go stale; these do not.
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact on Movo
+      description: |
+        Which Movo packages are affected, and does absorbing this require a Movo API change?
+        An upstream breaking change that forces a Movo API change is a Movo **major**.
+    validations:
+      required: true
+
+  - type: textarea
+    id: workaround
+    attributes:
+      label: Workaround
+      description: |
+        If there is one, state it along with its exact trigger condition — the condition
+        matters as much as the workaround, because it determines when the workaround can be
+        deleted again.
+
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: Confirmations
+      options:
+        - label: I verified this against the installed type declarations or observed wire
+            output, not from documentation or memory.
+          required: true

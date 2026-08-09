@@ -1,0 +1,57 @@
+name: Audit
+
+# Scheduled supply-chain and licence audit. Does not block merges; it reports.
+#
+# Separate from ci.yml because these checks fail for reasons unrelated to the change under
+# review — a new advisory published against an existing dependency should open an issue, not
+# turn someone else's pull request red.
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Weekly, Mondays 05:23 UTC — after the conformance run.
+    - cron: "23 5 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: dependency audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # `continue-on-error` so that one finding does not hide the others: every check below
+      # still runs, and the job result reflects the whole picture.
+      - name: pnpm audit
+        continue-on-error: true
+        run: pnpm audit --audit-level moderate
+
+      - name: Licence gate
+        run: pnpm check:licenses
+
+  osv:
+    name: OSV scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v5
+      - name: OSV scanner
+        uses: google/osv-scanner-action/osv-scanner-action@v2.4.4
+        with:
+          scan-args: |-
+            --recursive
+            --lockfile=./pnpm-lock.yaml

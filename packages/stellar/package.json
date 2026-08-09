@@ -1,0 +1,24 @@
+{
+  "name": "@movo/stellar",
+  "version": "0.0.0",
+  "description": "Stellar preflight diagnostics and remediation hints for Movo projects",
+  "license": "Apache-2.0",
+  "type": "module",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=22"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
+}

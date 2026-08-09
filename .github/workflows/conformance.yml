@@ -1,0 +1,60 @@
+name: Conformance
+
+# Live-service conformance. Runs the MOVO_E2E=1 suites against real third-party facilitators
+# and, from M2 onward, real Stellar testnet.
+#
+# THIS WORKFLOW MUST NEVER BLOCK THE PR GATE. The public facilitator is a service Movo does
+# not operate; its downtime is not a defect in this repository. It is deliberately not
+# triggered by `pull_request`, and it is not a required status check. See spec §16.9.
+
+on:
+  workflow_dispatch:
+    inputs:
+      facilitator_url:
+        description: Facilitator to probe
+        required: false
+        default: https://www.x402.org/facilitator
+  schedule:
+    # Weekly, Mondays 04:17 UTC. Off the hour so it does not queue behind everyone else's cron.
+    - cron: "17 4 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  conformance:
+    name: conformance (live services)
+    runs-on: ubuntu-latest
+    env:
+      MOVO_E2E: "1"
+      MOVO_FACILITATOR_URL: ${{ inputs.facilitator_url || 'https://www.x402.org/facilitator' }}
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      - name: Conformance suite
+        run: pnpm test:conformance
+
+      - name: End-to-end suite
+        run: pnpm test:e2e
+
+      # Regenerating the matrix here surfaces facilitator drift as a diff in the job log even
+      # when every assertion still passes.
+      - name: Regenerate compatibility matrix
+        run: pnpm generate:compat
+
+      - name: Show compatibility drift
+        run: git --no-pager diff -- docs/COMPATIBILITY.md

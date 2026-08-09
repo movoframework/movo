@@ -1,0 +1,24 @@
+{
+  "name": "@movo/bazaar",
+  "version": "0.0.0",
+  "description": "Derive x402 Bazaar discovery declarations from Movo resources and escalate soft-drop findings",
+  "license": "Apache-2.0",
+  "type": "module",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=22"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
+}

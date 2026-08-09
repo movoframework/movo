@@ -1,0 +1,27 @@
+{
+  "name": "@movo/core",
+  "version": "0.0.0",
+  "description": "Movo project model, resource compilation, errors and the x402 protocol narrow waist",
+  "license": "Apache-2.0",
+  "type": "module",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=22"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@x402/core": "2.21.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
+}

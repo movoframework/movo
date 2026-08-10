@@ -22,7 +22,7 @@
  * the gate is proven to fire rather than merely assumed to.
  */
 
-import { readdirSync, readFileSync, type Stats, statSync } from "node:fs";
+import { type Dirent, readdirSync, readFileSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { parseArgs } from "node:util";
@@ -147,8 +147,13 @@ function splitTopLevel(value: string, operator: "OR" | "AND"): string[] {
  * Collect every package manifest beneath `treeRoot`.
  *
  * pnpm's isolated node_modules puts the real packages under `node_modules/.pnpm/`, so the
- * walk deliberately does not skip dot-directories. Symlinks are not followed, which means
- * each physical package is inspected exactly once rather than once per symlink into it.
+ * walk deliberately does not skip dot-directories.
+ *
+ * Symlinks are not followed, and `lstatSync` rather than `statSync` is what makes that true.
+ * pnpm links every dependency of every package back into `.pnpm`, so following symlinks turns
+ * a flat tree into a densely cyclic graph and the walk stops terminating in reasonable time.
+ * Coverage is unaffected: every package exists exactly once as a real directory under
+ * `.pnpm/<pkg>/node_modules/<name>`, and the links only point back at those.
  */
 export function collectPackages(treeRoot: string): PackageLicence[] {
   const found: PackageLicence[] = [];
@@ -156,12 +161,16 @@ export function collectPackages(treeRoot: string): PackageLicence[] {
 
   const walk = (directory: string, depth: number): void => {
     if (depth > 12) return;
-    let entries: string[];
+    // withFileTypes answers "directory or symlink?" from the directory read itself, instead of
+    // one extra stat syscall per entry. Over a pnpm store that is the difference between
+    // seconds and tens of seconds, on a gate that runs in every CI job on every Node version.
+    let dirents: Dirent[];
     try {
-      entries = readdirSync(directory);
+      dirents = readdirSync(directory, { withFileTypes: true });
     } catch {
       return;
     }
+    const entries = dirents.map((dirent) => dirent.name);
 
     if (entries.includes("package.json")) {
       const manifestPath = join(directory, "package.json");
@@ -180,16 +189,9 @@ export function collectPackages(treeRoot: string): PackageLicence[] {
       }
     }
 
-    for (const entry of entries) {
-      const child = join(directory, entry);
-      let stats: Stats | undefined;
-      try {
-        stats = statSync(child, { throwIfNoEntry: false });
-      } catch {
-        continue;
-      }
-      if (stats === undefined || !stats.isDirectory()) continue;
-      walk(child, depth + 1);
+    for (const dirent of dirents) {
+      if (!dirent.isDirectory() || dirent.isSymbolicLink()) continue;
+      walk(join(directory, dirent.name), depth + 1);
     }
   };
 

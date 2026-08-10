@@ -2,7 +2,7 @@
 
 <!-- GENERATED FILE — DO NOT EDIT BY HAND. Regenerate with `pnpm generate:compat`. -->
 
-Generated at **2026-08-09T22:50:02.127Z**.
+Generated at **2026-08-10T19:42:28.367Z**.
 
 This file records what was actually installed and what the configured facilitator actually advertised at the moment of generation. It is evidence, not intent; where it disagrees with the architecture specification, this file is the one describing reality.
 

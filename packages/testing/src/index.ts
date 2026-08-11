@@ -1,5 +1,5 @@
 /**
- * @movo/testing — Facilitator fixtures, the payment failure matrix and matchers.
+ * @movoframework/testing — Facilitator fixtures, the payment failure matrix and matchers.
  *
  * M0 establishes the package skeleton, the build graph and the compliance gates. The
  * public API of this package is specified in §5 of the architecture spec and is

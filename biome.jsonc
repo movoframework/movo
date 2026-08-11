@@ -67,7 +67,7 @@
             "patterns": [
               {
                 "group": ["@x402/*", "@x402/**"],
-                "message": "MOVO NARROW WAIST (ADR-0004, spec §4.2 invariant 3): only files under packages/core/src/protocol/** may import from @x402/*. Re-export what you need from that module and import it from @movo/core instead. This boundary is what confines upstream SDK churn to a single directory."
+                "message": "MOVO NARROW WAIST (ADR-0004, spec §4.2 invariant 3): only files under packages/core/src/protocol/** may import from @x402/*. Re-export what you need from that module and import it from @movoframework/core instead. This boundary is what confines upstream SDK churn to a single directory."
               }
             ]
           }

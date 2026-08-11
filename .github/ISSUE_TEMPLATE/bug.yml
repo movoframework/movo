@@ -34,7 +34,7 @@ body:
     attributes:
       label: Environment
       description: |
-        Output of `node --version`, `pnpm --version`, and the `@movo/*` and `@x402/*` versions
+        Output of `node --version`, `pnpm --version`, and the `@movoframework/*` and `@x402/*` versions
         you have installed. If `movo doctor` exists in your version, paste its output.
       render: shell
     validations:

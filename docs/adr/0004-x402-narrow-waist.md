@@ -24,7 +24,7 @@ promise that a busy afternoon quietly breaks.
 ## Decision
 
 **Only files under `packages/core/src/protocol/**` may import from `@x402/*`. Everywhere else
-imports what it needs from `@movo/core`.**
+imports what it needs from `@movoframework/core`.**
 
 Enforced by Biome in `biome.jsonc`:
 
@@ -85,7 +85,7 @@ Two consequences were adopted from that:
   Movo's boundary governs Movo's source, not its users'. This must stay documented, since it
   is the one place Movo's abstraction deliberately stops.
 - The protocol module is a re-export surface, not a redesign surface. Re-exporting an upstream
-  type under a different name would reintroduce the `@movo/x402` problem inside a directory
+  type under a different name would reintroduce the `@movoframework/x402` problem inside a directory
   (ADR-0002). Renaming is permitted only with a recorded reason.
 
 At M0 `packages/core/src/protocol/` contains no files: no package has code yet, so there is
@@ -94,7 +94,7 @@ boundary exists before the first import that would test it.
 
 ## Alternatives rejected
 
-**A published `@movo/x402` façade package.** Rejected in ADR-0002. It achieves the same
+**A published `@movoframework/x402` façade package.** Rejected in ADR-0002. It achieves the same
 isolation at the cost of a version, a publish cadence, a changelog and a compatibility promise
 — none of which a directory needs.
 

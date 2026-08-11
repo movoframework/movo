@@ -1,5 +1,5 @@
 /**
- * @movo/stellar — Stellar preflight diagnostics and remediation hints.
+ * @movoframework/stellar — Stellar preflight diagnostics and remediation hints.
  *
  * M0 establishes the package skeleton, the build graph and the compliance gates. The
  * public API of this package is specified in §5 of the architecture spec and is

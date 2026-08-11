@@ -29,7 +29,7 @@ Security fixes may ship as a patch release to any supported minor version.
 
 ## Scope
 
-In scope: the `@movo/*` packages, `create-movo-app`, the repository's compliance tooling, and
+In scope: the `@movoframework/*` packages, `create-movo-app`, the repository's compliance tooling, and
 (once it exists) the facilitator service under `apps/facilitator`.
 
 Out of scope, and better reported upstream:

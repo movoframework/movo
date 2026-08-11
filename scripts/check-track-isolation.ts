@@ -40,8 +40,8 @@ const CORE_TRACK: readonly string[] = [
 
 const SCF_TRACK: readonly string[] = ["facilitator", "catalog", "mcp"];
 
-/** `@movo/facilitator`, `@movo/catalog`, `@movo/mcp` and any of their subpaths. */
-const SCF_SPECIFIER = new RegExp(`^@movo/(${SCF_TRACK.join("|")})(/|$)`);
+/** `@movoframework/facilitator`, `@movoframework/catalog`, `@movoframework/mcp` and any of their subpaths. */
+const SCF_SPECIFIER = new RegExp(`^@movoframework/(${SCF_TRACK.join("|")})(/|$)`);
 
 const SOURCE_EXTENSIONS: readonly string[] = [".ts", ".mts", ".cts", ".js", ".mjs", ".cjs"];
 

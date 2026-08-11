@@ -35,17 +35,22 @@ function runGate(root: string): SpawnResult {
 describe("specifier extraction", () => {
   it("finds static, side-effect, dynamic and require specifiers", () => {
     const source = [
-      'import { a } from "@movo/core";',
+      'import { a } from "@movoframework/core";',
       'import "./side-effect.js";',
-      'const b = await import("@movo/catalog");',
-      'const c = require("@movo/mcp");',
+      'const b = await import("@movoframework/catalog");',
+      'const c = require("@movoframework/mcp");',
     ].join("\n");
 
     expect(
       extractSpecifiers(source)
         .map((entry) => entry.specifier)
         .sort(),
-    ).toEqual(["./side-effect.js", "@movo/catalog", "@movo/core", "@movo/mcp"]);
+    ).toEqual([
+      "./side-effect.js",
+      "@movoframework/catalog",
+      "@movoframework/core",
+      "@movoframework/mcp",
+    ]);
   });
 });
 
@@ -58,7 +63,9 @@ describe("track isolation gate", () => {
 
   it("catches a core-track package importing an SCF-track package by name", () => {
     const report = checkTrackIsolation(VIOLATING);
-    expect(report.violations.map((violation) => violation.specifier)).toContain("@movo/catalog");
+    expect(report.violations.map((violation) => violation.specifier)).toContain(
+      "@movoframework/catalog",
+    );
   });
 
   it("catches a core-track package reaching into the SCF track by relative path", () => {

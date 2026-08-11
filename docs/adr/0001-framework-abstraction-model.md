@@ -61,15 +61,15 @@ that already provides the framework primitives.
 
 ## Consequences
 
-- Several planned packages disappear before they are written: `@movo/x402` (ADR-0002), a
-  `@movo/express` middleware wrapper, a Movo Bazaar validator library, and a Movo Stellar
+- Several planned packages disappear before they are written: `@movoframework/x402` (ADR-0002), a
+  `@movoframework/express` middleware wrapper, a Movo Bazaar validator library, and a Movo Stellar
   constants module. Each would have been a second source of truth for a value or behaviour
   that must never diverge — the class of duplication that produces a silent money bug.
 - Movo inherits upstream's HTTP semantics, including its settle-ordering choice and its
   unpaid-response shape. Movo cannot fix a decision it disagrees with except by contributing
   upstream. This is accepted deliberately; the alternative is divergence on exactly the
   ordering semantics that matter most.
-- The remaining packages are thin. `@movo/bazaar` is perhaps 300 lines and `@movo/stellar` is
+- The remaining packages are thin. `@movoframework/bazaar` is perhaps 300 lines and `@movoframework/stellar` is
   diagnostics-only. This invites the question "is this even a framework?" — the honest answer
   is that the value is in the project layer and the diagnostics, and the documentation must
   lead with that rather than with a package count.

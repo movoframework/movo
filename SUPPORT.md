@@ -20,7 +20,7 @@
 | Node.js 26 (Current) | Supported — in the CI matrix |
 | Node.js ≤20 | Not supported — below the upstream engine floor |
 
-Movo is **ESM-only**. CJS `require()` of `@movo/*` is not supported.
+Movo is **ESM-only**. CJS `require()` of `@movoframework/*` is not supported.
 
 ## `@x402/*` compatibility window
 

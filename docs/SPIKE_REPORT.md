@@ -159,7 +159,7 @@ point.** There are three, and the choice is about access to lifecycle hooks:
 `onBeforeSettle`, `onAfterSettle`, `onSettleFailure` and `onVerifiedPaymentCanceled`;
 `x402HTTPResourceServer` adds `onProtectedRequest`.
 
-**Recommendation for `@movo/server`: mount via `paymentMiddlewareFromHTTPServer`**, falling
+**Recommendation for `@movoframework/server`: mount via `paymentMiddlewareFromHTTPServer`**, falling
 back to `paymentMiddleware` where HTTP-level hooks are not needed. Movo's entire claimed value
 on this path — error translation, diagnostics, correlation IDs, cancellation reporting — lives
 in those hooks, and `paymentMiddlewareFromConfig` makes them unreachable. It remains the right
@@ -234,8 +234,8 @@ only to *inspect* the exchange:
 - `decodePaymentRequiredHeader` — **only** from `@x402/core/http`; `@x402/fetch` does not
   re-export it.
 
-For `@movo/client`'s `decodePaymentOutcome`, both must be re-exported through the narrow waist
-(`packages/core/src/protocol/`), since `@movo/client` may not import `@x402/*` directly.
+For `@movoframework/client`'s `decodePaymentOutcome`, both must be re-exported through the narrow waist
+(`packages/core/src/protocol/`), since `@movoframework/client` may not import `@x402/*` directly.
 
 The header names on the wire are `PAYMENT-REQUIRED`, `PAYMENT-SIGNATURE` and
 `PAYMENT-RESPONSE`.

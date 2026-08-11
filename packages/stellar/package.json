@@ -1,5 +1,5 @@
 {
-  "name": "@movo/stellar",
+  "name": "@movoframework/stellar",
   "version": "0.0.0",
   "description": "Stellar preflight diagnostics and remediation hints for Movo projects",
   "license": "Apache-2.0",

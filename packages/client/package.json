@@ -1,5 +1,5 @@
 {
-  "name": "@movo/client",
+  "name": "@movoframework/client",
   "version": "0.0.0",
   "description": "Buyer-side budget accounting, typed resource clients and payment outcome decoding",
   "license": "Apache-2.0",

@@ -1,5 +1,5 @@
 {
-  "name": "@movo/cli",
+  "name": "@movoframework/cli",
   "version": "0.0.0",
   "description": "The movo command line interface",
   "license": "Apache-2.0",

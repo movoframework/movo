@@ -1,5 +1,5 @@
 {
-  "name": "@movo/server",
+  "name": "@movoframework/server",
   "version": "0.0.0",
   "description": "Mount compiled Movo resources onto a Node HTTP framework",
   "license": "Apache-2.0",

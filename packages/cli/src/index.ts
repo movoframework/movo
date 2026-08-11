@@ -1,5 +1,5 @@
 /**
- * @movo/cli — The movo command line interface.
+ * @movoframework/cli — The movo command line interface.
  *
  * M0 establishes the package skeleton, the build graph and the compliance gates. The
  * public API of this package is specified in §5 of the architecture spec and is

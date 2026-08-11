@@ -1,7 +1,7 @@
 {
-  "name": "@movo/cli",
+  "name": "@movoframework/cli",
   "version": "0.0.0",
   "dependencies": {
-    "@movo/facilitator": "workspace:*"
+    "@movoframework/facilitator": "workspace:*"
   }
 }

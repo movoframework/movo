@@ -1,3 +1,3 @@
-import { VERSION } from "@movo/bazaar";
+import { VERSION } from "@movoframework/bazaar";
 
 export const catalog = VERSION;

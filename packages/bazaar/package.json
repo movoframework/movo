@@ -1,5 +1,5 @@
 {
-  "name": "@movo/bazaar",
+  "name": "@movoframework/bazaar",
   "version": "0.0.0",
   "description": "Derive x402 Bazaar discovery declarations from Movo resources and escalate soft-drop findings",
   "license": "Apache-2.0",

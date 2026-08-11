@@ -1,5 +1,5 @@
 {
-  "name": "@movo/testing",
+  "name": "@movoframework/testing",
   "version": "0.0.0",
   "description": "Facilitator fixtures, the payment failure matrix, harness and assertion matchers for Movo apps",
   "license": "Apache-2.0",

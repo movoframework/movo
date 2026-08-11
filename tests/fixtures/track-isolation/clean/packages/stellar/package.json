@@ -1,7 +1,7 @@
 {
-  "name": "@movo/stellar",
+  "name": "@movoframework/stellar",
   "version": "0.0.0",
   "dependencies": {
-    "@movo/core": "workspace:*"
+    "@movoframework/core": "workspace:*"
   }
 }

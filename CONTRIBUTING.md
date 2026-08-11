@@ -7,7 +7,7 @@ more prescriptive than most. Please read the two hard rules first.
 
 **Only files under `packages/core/src/protocol/**` may import from `@x402/*`.**
 
-Everywhere else, import what you need from `@movo/core`, re-exporting through the protocol
+Everywhere else, import what you need from `@movoframework/core`, re-exporting through the protocol
 module if it is not already exposed.
 
 The rule is enforced by `style/noRestrictedImports` in `biome.jsonc` and is proven to fire by

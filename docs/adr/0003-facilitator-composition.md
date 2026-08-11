@@ -16,7 +16,7 @@ and settles it on chain. Three deployment shapes are needed:
 | `in-process` | `x402Facilitator` + `ExactStellarScheme` inside the dev server | `stellar:testnet` | Hermetic end-to-end; real settlement without a third party |
 | `<url>` | An HTTP facilitator | `stellar:testnet` | The default; free and keyless on testnet |
 
-The instinct is to define a `Facilitator` port in `@movo/core` with three implementations. That
+The instinct is to define a `Facilitator` port in `@movoframework/core` with three implementations. That
 instinct is wrong here, and the reason is worth recording.
 
 `@x402/core/server` already exports `FacilitatorClient` (the interface) and

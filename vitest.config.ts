@@ -15,12 +15,30 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     passWithNoTests: true,
+    /**
+     * Coverage floor: 90% of lines in `@movoframework/core` (AC1.10, spec §3.2). Configured as
+     * a threshold rather than a number someone reads off a report, because a floor nobody
+     * enforces is a number that only ever goes down.
+     *
+     * The protocol module is excluded from the denominator: it is re-export declarations with
+     * no branches, so covering it measures whether a test imported the module rather than
+     * whether anything is tested. `protocol/upstream-conformance.test.ts` exercises it
+     * directly and is where the real assurance lives.
+     */
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "json-summary"],
+      include: ["packages/core/src/**/*.ts"],
+      exclude: ["**/*.test.ts", "packages/core/src/protocol/index.ts"],
+      thresholds: { lines: 90 },
+    },
     projects: [
       {
         test: {
           name: "unit",
           environment: "node",
           include: ["packages/*/src/**/*.test.ts", "tests/unit/**/*.test.ts"],
+          setupFiles: ["./tests/setup/no-network.ts"],
         },
       },
       {

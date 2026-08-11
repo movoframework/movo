@@ -24,6 +24,7 @@ import { readdirSync, readFileSync, type Stats, statSync } from "node:fs";
 import { join, relative, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { parseArgs } from "node:util";
+import { MOVO_SCOPE } from "../packages/core/src/identity.ts";
 
 const REPO_ROOT: string = resolve(fileURLToPath(import.meta.url), "..", "..");
 
@@ -40,8 +41,28 @@ const CORE_TRACK: readonly string[] = [
 
 const SCF_TRACK: readonly string[] = ["facilitator", "catalog", "mcp"];
 
-/** `@movoframework/facilitator`, `@movoframework/catalog`, `@movoframework/mcp` and any of their subpaths. */
-const SCF_SPECIFIER = new RegExp(`^@movoframework/(${SCF_TRACK.join("|")})(/|$)`);
+/**
+ * The SCF-track package specifiers and any of their subpaths.
+ *
+ * Built from {@link MOVO_SCOPE} rather than written out, because this gate previously carried
+ * the scope as a literal in both the pattern and its proof-of-failure fixtures. A rename then
+ * updated the fixtures, left the fixture test green, and quietly stopped the pattern matching
+ * anything in real code. See `packages/core/src/identity.ts`.
+ */
+const SCF_SPECIFIER = new RegExp(`^${escapeForRegExp(MOVO_SCOPE)}/(${SCF_TRACK.join("|")})(/|$)`);
+
+/**
+ * Escape a literal for embedding in a regular expression.
+ *
+ * `@` is not a metacharacter today, but the scope is data from another module and this gate
+ * must not become sensitive to what that data contains.
+ *
+ * @param literal - Text to match literally
+ * @returns The escaped form
+ */
+function escapeForRegExp(literal: string): string {
+  return literal.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
 
 const SOURCE_EXTENSIONS: readonly string[] = [".ts", ".mts", ".cts", ".js", ".mjs", ".cjs"];
 

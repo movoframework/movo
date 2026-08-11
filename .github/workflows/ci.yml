@@ -58,18 +58,42 @@ jobs:
       - name: Test (unit + integration)
         run: pnpm test
 
+  # Sibling of `verify` with no `needs:` — a secret scan must not be gated behind a build.
+  # We invoke the gitleaks binary directly rather than gitleaks/gitleaks-action: only the
+  # action wrapper is EULA-encumbered and demands a paid GITLEAKS_LICENSE for org-owned
+  # repositories, while the binary itself stays MIT. Pulling an EULA-gated dependency into
+  # the same CI that runs our own licence gate is not something we are willing to do.
   secrets:
     name: secret scan
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    env:
+      # Bump this pin deliberately: read the release notes, then update the checksum below
+      # from the release's gitleaks_<version>_checksums.txt. Never track `latest` — a scanner
+      # that silently changes version changes what the gate means.
+      GITLEAKS_VERSION: 8.30.1
+      GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
     steps:
       - uses: actions/checkout@v5
         with:
-          # gitleaks needs history to scan the commits a PR introduces, not just the tree.
+          # gitleaks scans commits, not just the tree. A shallow clone would scan almost no
+          # history and report clean, which is worse than not scanning at all.
           fetch-depth: 0
 
-      - name: gitleaks
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install gitleaks
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -sSfL -o /tmp/gitleaks.tar.gz \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          echo "${GITLEAKS_SHA256}  /tmp/gitleaks.tar.gz" | sha256sum -c -
+          sudo tar -xzf /tmp/gitleaks.tar.gz -C /usr/local/bin gitleaks
+          gitleaks version
+
+      - name: Scan
+        shell: bash
+        # `git` is the v8 subcommand for scanning history; the old `detect` no longer exists.
+        # --redact is load-bearing: without it a detection prints the secret into a public
+        # CI log, turning the detection itself into the disclosure.
+        run: gitleaks git . --redact --exit-code 1 --no-banner --verbose

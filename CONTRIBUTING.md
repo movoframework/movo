@@ -50,6 +50,45 @@ allowed and is not affected by this rule.
 `pnpm check:licenses` enforces this on every PR and on a schedule. It is tested against a
 planted AGPL fixture so that the gate is known to fire rather than assumed to.
 
+## Hard rule 3 — no gate ships without a proof-of-failure test
+
+**Any check intended to block a merge — a lint rule, the licence gate, the isolation check, a
+redaction assertion, the documentation compiler — must have a committed fixture that makes it
+fail, and a test asserting it fails on that fixture.**
+
+A gate that has never been observed to fail has not been shown to work. It has been shown to
+report success, which is not the same thing and is considerably more reassuring than it deserves
+to be.
+
+This is not hypothetical. In M0, Biome parsed `biome.json` as strict JSON and silently truncated
+the configuration at an explanatory comment. Lint reported success while the narrow-waist rule —
+the most load-bearing gate in the repository — was not loaded at all. Only the proof-of-failure
+test caught it. (Config files that accept comments now use the `.jsonc` extension.)
+
+## Hard rule 4 — single-source every identifier
+
+**A value with more than one consumer is exported from exactly one module. Every gate, every
+gate fixture and every test imports it rather than writing it out.**
+
+The npm scope lives in `packages/core/src/identity.ts` as `MOVO_SCOPE`. The error documentation
+base URL lives in `packages/core/src/errors/registry.ts` as `DOCS_BASE_URL`. Both are enforced by
+tests that fail if a literal reappears anywhere else — `tests/unit/scope-drift.test.ts` and
+`tests/unit/single-source.test.ts`.
+
+The reason is a specific near-miss. When the project changed npm scope, the track-isolation gate
+held the old scope as a literal in its matching pattern, and its proof-of-failure fixtures held
+it again independently. The rename updated the fixtures, so the fixture test stayed green — while
+the gate's pattern no longer matched anything that existed in real code. The gate was reporting
+success on a repository it had stopped inspecting.
+
+Two copies of a value do not stay in step, and when they diverge it is the *checked* copy that
+keeps reporting success. Import specifiers are the one unavoidable exception, since a specifier
+must be a literal; `tests/unit/scope-drift.test.ts` covers that case by asserting every
+`packages/*/package.json` name against `MOVO_SCOPE`.
+
+Apply the rule to anything new. If you add a gate, derive its patterns from a constant and
+generate its fixtures from the same constant.
+
 ## Getting set up
 
 Node.js ≥22 and pnpm 10.x.
@@ -61,6 +100,8 @@ pnpm check:track-isolation
 pnpm typecheck
 pnpm lint
 pnpm build
+pnpm check:errors        # docs/reference/errors.md matches the error registry
+pnpm check:docs          # every TypeScript block in docs/ compiles
 pnpm test
 ```
 
@@ -101,7 +142,9 @@ Every PR must satisfy all of these (spec §16.3):
 - [ ] No protocol behaviour invented; no upstream functionality duplicated (cite the upstream
       export if adjacent)
 - [ ] Narrow-waist rule respected
-- [ ] Documentation updated; every new code block compiles
+- [ ] Any new gate has a proof-of-failure fixture and a test asserting it fires (hard rule 3)
+- [ ] No identifier written out twice; new constants are single-sourced and tested (hard rule 4)
+- [ ] Documentation updated; every new code block compiles (`pnpm check:docs`)
 - [ ] Public API changes documented and a changeset added
 - [ ] Security implications stated
 - [ ] Any new dependency justified in writing, with its licence named

@@ -48,9 +48,12 @@ function lint(file: string): LintResult {
 }
 
 afterEach(() => {
+  // Only the probe files, never the directory. `packages/core/src/protocol/` was empty at M0,
+  // so removing it recursively was harmless then and catastrophic the moment M1 put the narrow
+  // waist itself there — a cleanup step that deleted the module every other file imports.
+  // A test's teardown may remove what its setup created and nothing else.
   rmSync(FORBIDDEN_PROBE, { force: true });
   rmSync(PERMITTED_PROBE, { force: true });
-  rmSync(PERMITTED_DIRECTORY, { force: true, recursive: true });
 });
 
 describe("the x402 narrow waist", () => {

@@ -1758,7 +1758,9 @@ Status values: **SUPPORTED** (tested in CI and covered by the support policy) ·
 | Other x402 networks (EVM/SVM) | — | **UNSUPPORTED** | No scheme registered; abstractions permit it, nothing implements it |
 | `exact` scheme | Stellar, via `ExactStellarScheme` `[FACT]` | **SUPPORTED** | The only scheme registered |
 | `upto` scheme | No Stellar network spec exists `[FACT — per the RFP]` | **UNSUPPORTED** | Separate workstream; requires an upstream spec and probably a Soroban contract |
-| pnpm | 10.x, `engines.node >=22.13` `[FACT]` | **SUPPORTED** | The only supported workspace manager; lockfile committed |
+| pnpm | 10.x, `engines.node >=22.13` `[FACT]`; 10.23.0 installed and pinned by `packageManager` | **SUPPORTED** | The only supported workspace manager; lockfile committed |
+| pnpm 11.x | 11.21.0 exists `[FACT — observed 2026-08]` | **UNTESTED** | `packageManager` pins the installed 10.x line. Added at M1 per Spec Amendment 001 §4 so the gap is recorded rather than assumed away |
+| Streaming / SSE / chunked responses behind a paid route | — | **UNSUPPORTED** | `[FACT — M0 spike]` the upstream middleware buffers the entire response until settlement resolves, so a paid route cannot stream. Structural, not incidental: settlement is conditional on the response status, which is not known until the response is complete. See `docs/concepts/payment-lifecycle.md` and Spec Amendment 001 §1 |
 | npm / yarn (as consumer of published packages) | current | **SUPPORTED** | Packages are ordinary ESM npm packages |
 | npm / yarn (as monorepo manager for contributors) | — | **UNSUPPORTED** | Workspace protocol and scripts assume pnpm |
 | Node server runtime | — | **SUPPORTED** | The target deployment shape |
@@ -1794,6 +1796,7 @@ Status values: **SUPPORTED** (tested in CI and covered by the support policy) ·
 | Vitest | Test runner | *requires verification* (commonly MIT) | Dev | **Yes**, pending verification | Dev tooling | Dev-only |
 | TypeScript | Compiler | Apache-2.0 `[ASSUMPTION — long-standing]` | Dev | **Yes**, pending verification | Dev tooling | Dev-only |
 | Changesets | Release automation | *requires verification* (commonly MIT) | Dev | **Yes**, pending verification | Dev tooling | Dev-only |
+| `spawndamnit` | Subprocess helper used by Changesets | Declares `SEE LICENSE IN LICENSE`; the bundled `LICENSE` file is **verbatim MIT** `[FACT — read at M1, `spawndamnit@3.0.1`]` | Transitive via `@changesets/cli` | **Yes** | Permissive once read; dev tooling only, never distributed | This is the one package `check-licenses` warns on. It warns because the declared SPDX string is non-standard, not because the licence is unclear. Recorded at M1 per Spec Amendment 001 §4: a warning nobody wrote down becomes a warning nobody re-examines |
 | **OpenZeppelin Relayer** | Hosted facilitator implementation | **AGPL-3.0-or-later** `[FACT — per the SCF RFP, which names it as unusable as a base]` | **None — must remain absent** | **NO** | Network copyleft would extend to third parties served by a Movo facilitator | Licence gate fails the build if it ever appears; `CONTRIBUTING.md` names it explicitly |
 | **x402 Facilitator Plugin** (`relayer-plugin-x402-facilitator`) | The plugin powering the Built-on-Stellar facilitator | **AGPL-3.0-or-later** `[FACT — per the RFP]` | **None** | **NO** | Same | Same; may be *read* as public documentation, never copied |
 | **OpenZeppelin Relayer SDK** | Client for the above | **AGPL-3.0-or-later** `[FACT — per the RFP]` | **None** | **NO** | Same | Same |

@@ -25,3 +25,6 @@ Thumbs.db
 .idea/
 .vscode/*
 !.vscode/extensions.json
+
+# Transient workspace written by scripts/check-docs-codeblocks.ts
+packages/core/.docs-codeblocks-*/

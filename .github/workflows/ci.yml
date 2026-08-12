@@ -55,6 +55,14 @@ jobs:
       - name: Build
         run: pnpm build
 
+      # After the build, because both gates resolve `@movoframework/core` and a stale tree
+      # would make their failures read as documentation problems rather than build problems.
+      - name: Error reference is in sync with the registry
+        run: pnpm check:errors
+
+      - name: Documentation code blocks compile
+        run: pnpm check:docs
+
       - name: Test (unit + integration)
         run: pnpm test
 

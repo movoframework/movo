@@ -87,6 +87,32 @@
           }
         }
       }
+    },
+    {
+      // ─── THE BUYER-SIDE EXCEPTION ──────────────────────────────────────────────────────
+      //
+      // The e2e and conformance suites deliberately act as a THIRD-PARTY BUYER, not as part of
+      // Movo. Spec §1.16 layer 4 defines conformance as "unmodified stock @x402/fetch client
+      // against a Movo app", and the whole evidentiary value of that comes from the client
+      // being genuinely unmodified. Routing the buyer through a Movo re-export would test Movo
+      // against Movo and prove nothing about interoperability.
+      //
+      // The narrow waist exists to confine upstream churn inside the packages Movo SHIPS. It is
+      // not weakened here: `packages/**` remains fully covered, and
+      // `tests/unit/narrow-waist.test.ts` proves the rule still fires by writing a real
+      // violation into `packages/stellar/src` and running the real linter over it.
+      //
+      // Scoped to these two directories on purpose. `tests/integration/**` is NOT included:
+      // that suite exercises Movo's own mount, so it must reach upstream the way a consumer
+      // does — through @movoframework/core.
+      "includes": ["tests/e2e/**", "tests/conformance/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": "off"
+          }
+        }
+      }
     }
   ]
 }

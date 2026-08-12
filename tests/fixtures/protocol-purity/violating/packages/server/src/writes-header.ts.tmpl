@@ -1,0 +1,4 @@
+// VIOLATION FIXTURE: a wire header name written as a literal instead of imported.
+export function readPayment(headers: Record<string, string>): string | undefined {
+  return headers["__PAYMENT_SIGNATURE_HEADER__"];
+}

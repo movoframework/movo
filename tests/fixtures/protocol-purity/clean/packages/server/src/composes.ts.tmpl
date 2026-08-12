@@ -1,0 +1,6 @@
+// CLEAN FIXTURE: composing upstream, importing the header names rather than writing them.
+import { PAYMENT_HEADERS } from "__MOVO_SCOPE__/core";
+
+export function readPayment(headers: Record<string, string>): string | undefined {
+  return headers[PAYMENT_HEADERS.signature.toLowerCase()];
+}

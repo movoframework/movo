@@ -20,5 +20,9 @@
   "publishConfig": {
     "access": "public",
     "provenance": true
+  },
+  "dependencies": {
+    "@movoframework/core": "workspace:*",
+    "@stellar/stellar-sdk": "^16.0.1"
   }
 }

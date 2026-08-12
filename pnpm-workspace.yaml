@@ -1,6 +1,7 @@
 packages:
   - "packages/*"
   - "apps/*"
+  - "examples/*"
 
 # Only these packages are permitted to run install lifecycle scripts. Everything
 # else installs inert. This is a supply-chain control (spec §14): a malicious

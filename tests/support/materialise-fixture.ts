@@ -26,9 +26,20 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { MOVO_SCOPE } from "../../packages/core/src/identity.ts";
+import { PAYMENT_HEADERS } from "../../packages/core/src/protocol/index.ts";
 
-/** Placeholders substituted into every `.tmpl` fixture. */
-const PLACEHOLDERS: ReadonlyMap<string, string> = new Map([["__MOVO_SCOPE__", MOVO_SCOPE]]);
+/**
+ * Placeholders substituted into every `.tmpl` fixture.
+ *
+ * Each entry pairs a placeholder with the single constant a gate derives its patterns from, so
+ * a gate and the fixtures proving it fires can never spell the same string out independently.
+ */
+const PLACEHOLDERS: ReadonlyMap<string, string> = new Map([
+  ["__MOVO_SCOPE__", MOVO_SCOPE],
+  ["__PAYMENT_SIGNATURE_HEADER__", PAYMENT_HEADERS.signature],
+  ["__PAYMENT_REQUIRED_HEADER__", PAYMENT_HEADERS.required],
+  ["__PAYMENT_RESPONSE_HEADER__", PAYMENT_HEADERS.response],
+]);
 
 const TEMPLATE_SUFFIX = ".tmpl";
 

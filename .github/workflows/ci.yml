@@ -46,6 +46,9 @@ jobs:
       - name: Track isolation
         run: pnpm check:track-isolation
 
+      - name: Protocol purity
+        run: pnpm check:protocol-purity
+
       - name: Typecheck
         run: pnpm typecheck
 

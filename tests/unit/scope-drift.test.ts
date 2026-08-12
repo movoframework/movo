@@ -64,6 +64,28 @@ function listFiles(directory: string, accumulator: string[]): string[] {
   return accumulator;
 }
 
+/**
+ * Strip module specifiers before scanning.
+ *
+ * An import specifier has to be a literal — there is no way to derive one — so a package that
+ * legitimately depends on another must write the scope. That case is covered instead by the
+ * manifest assertion above, which pins every published name to `MOVO_SCOPE`.
+ *
+ * Everything else is still caught: a pattern built from the scope, a fixture that hard-codes it,
+ * an assertion comparing against it. Those are the copies that drift, and they are the ones the
+ * M0 rename actually broke.
+ *
+ * @param source - File contents
+ * @returns The contents with `import`/`export … from "…"` specifiers removed
+ */
+function withoutImportSpecifiers(source: string): string {
+  return source
+    .replace(/\bfrom\s*["'][^"']*["']/g, "")
+    .replace(/\bimport\s*\(\s*["'][^"']*["']\s*\)/g, "")
+    .replace(/\bimport\s*["'][^"']*["']/g, "")
+    .replace(/\brequire\s*\(\s*["'][^"']*["']\s*\)/g, "");
+}
+
 function readManifestName(packageDirectory: string): string {
   const raw = readFileSync(join(PACKAGES_DIRECTORY, packageDirectory, "package.json"), "utf8");
   return (JSON.parse(raw) as { name: string }).name;
@@ -124,9 +146,21 @@ describe("the npm scope is single-sourced", () => {
           relative(REPO_ROOT, file).split(sep).join("/") !==
           SINGLE_SOURCE_FILE.split(sep).join("/"),
       )
-      .filter((file) => readFileSync(file, "utf8").includes(MOVO_SCOPE))
+      .filter((file) => withoutImportSpecifiers(readFileSync(file, "utf8")).includes(MOVO_SCOPE))
       .map((file) => relative(REPO_ROOT, file).split(sep).join("/"));
 
     expect(offenders).toEqual([]);
+  });
+
+  it("still catches the scope written anywhere other than an import", () => {
+    // Guards the exemption above from swallowing the rule. A pattern, a fixture literal or an
+    // assertion must still be caught; only the module specifier is allowed to spell it out.
+    const disguised = [
+      `import { thing } from "${MOVO_SCOPE}/core";`,
+      `const pattern = new RegExp("^${MOVO_SCOPE}/");`,
+    ].join("\n");
+
+    expect(withoutImportSpecifiers(disguised)).not.toContain("from");
+    expect(withoutImportSpecifiers(disguised)).toContain(MOVO_SCOPE);
   });
 });

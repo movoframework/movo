@@ -44,6 +44,7 @@ export type {
   SchemeNetworkServer,
   SettleResponse,
   SupportedKind,
+  SupportedResponse,
   VerifyResponse,
 } from "@x402/core/types";
 
@@ -82,13 +83,20 @@ export {
 export type { RpcConfig } from "@x402/stellar";
 export {
   convertToTokenAmount,
+  DEFAULT_ESTIMATED_LEDGER_SECONDS,
   DEFAULT_TOKEN_DECIMALS,
+  getEstimatedLedgerCloseTimeSeconds,
+  getHorizonClient,
   getNetworkPassphrase,
+  getRpcClient,
   getRpcUrl,
   getUsdcAddress,
   isStellarNetwork,
+  STELLAR_NETWORK_TO_PASSPHRASE,
   STELLAR_PUBNET_CAIP2,
   STELLAR_TESTNET_CAIP2,
+  USDC_PUBNET_ADDRESS,
+  USDC_TESTNET_ADDRESS,
   validateStellarAssetAddress,
   validateStellarDestinationAddress,
 } from "@x402/stellar";
@@ -106,3 +114,31 @@ export {
  * change upstream fails a test rather than producing routes no facilitator will settle.
  */
 export const EXACT_SCHEME = "exact";
+
+/**
+ * The x402 wire header names.
+ *
+ * Upstream writes these as literals inside its own middleware and codecs and exports no
+ * constant for them, so Movo declares them here — once, in the waist — rather than letting the
+ * strings appear wherever a header is read. Two reasons that matters.
+ *
+ * First, single-sourcing: `AC2.7` requires that no `PAYMENT-*` literal appears in
+ * `@movoframework/server` or `@movoframework/stellar` outside tests, because a Movo package
+ * writing protocol header strings is the shape of a package that has started implementing the
+ * protocol. Importing a named constant keeps that check meaningful — it fails on the thing it
+ * is meant to catch rather than on a package that legitimately reads one header.
+ *
+ * Second, these are the *wire* names, verified against the installed packages rather than
+ * remembered: `PAYMENT-REQUIRED`, `PAYMENT-SIGNATURE` and `PAYMENT-RESPONSE` all appear as
+ * literals in `@x402/express` and `@x402/core`. The integration suite drives real requests
+ * through the real middleware using these constants, so a rename upstream fails a test rather
+ * than silently producing a server that never sees a payment.
+ */
+export const PAYMENT_HEADERS = {
+  /** Sent by the server on a 402, carrying the accepted payment options. */
+  required: "PAYMENT-REQUIRED",
+  /** Sent by the buyer on the retry, carrying the signed payload. */
+  signature: "PAYMENT-SIGNATURE",
+  /** Sent by the server on success, carrying the settlement result. */
+  response: "PAYMENT-RESPONSE",
+} as const;

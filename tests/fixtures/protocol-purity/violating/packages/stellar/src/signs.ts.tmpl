@@ -1,0 +1,4 @@
+// VIOLATION FIXTURE: Movo never holds a payer key and never signs.
+import { Keypair } from "@stellar/stellar-sdk";
+
+export const bad = Keypair.fromSecret;

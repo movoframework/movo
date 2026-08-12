@@ -1,13 +1,32 @@
 {
   "files": [],
   "references": [
-    { "path": "packages/core" },
-    { "path": "packages/server" },
-    { "path": "packages/stellar" },
-    { "path": "packages/bazaar" },
-    { "path": "packages/client" },
-    { "path": "packages/testing" },
-    { "path": "packages/cli" },
-    { "path": "packages/create-movo-app" }
+    {
+      "path": "packages/core"
+    },
+    {
+      "path": "packages/server"
+    },
+    {
+      "path": "packages/stellar"
+    },
+    {
+      "path": "packages/bazaar"
+    },
+    {
+      "path": "packages/client"
+    },
+    {
+      "path": "packages/testing"
+    },
+    {
+      "path": "packages/cli"
+    },
+    {
+      "path": "packages/create-movo-app"
+    },
+    {
+      "path": "examples/weather-api"
+    }
   ]
 }

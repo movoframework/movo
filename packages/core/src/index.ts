@@ -145,6 +145,7 @@ export {
 export type {
   AssetAmount,
   FacilitatorClient,
+  FacilitatorStellarSigner,
   Money,
   MoneyParser,
   Network,

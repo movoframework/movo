@@ -21,6 +21,9 @@
 
 // ─── Resource server and facilitator client (@x402/core/server) ──────────────────────────
 
+// The in-process facilitator is upstream's implementation. Movo's testing package composes
+// it; it does not define a parallel facilitator contract or an HTTP service.
+export { x402Facilitator } from "@x402/core/facilitator";
 export type {
   AfterSettleHook,
   AfterVerifyHook,
@@ -45,6 +48,7 @@ export {
 // `upstream-conformance.test.ts`. Its `registerMoneyParser` is the supported extension point
 // for pricing in a non-default asset — Movo must never implement its own price conversion.
 
+export { ExactStellarScheme as FacilitatorExactStellarScheme } from "@x402/stellar/exact/facilitator";
 export { ExactStellarScheme } from "@x402/stellar/exact/server";
 
 // ─── Express middleware (@x402/express) ──────────────────────────────────────────────────

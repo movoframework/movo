@@ -106,15 +106,14 @@ describe.skipIf(!E2E_ENABLED)("preflight against the real account", () => {
 
 describe.skipIf(!E2E_ENABLED)("AC2.4 — preflight against an account with no trustline", () => {
   it("returns an error-level finding whose fix is an executable remedy", async () => {
-    // A freshly funded account: it exists, it holds XLM, and it has no trustline to anything.
-    // That is the exact state a developer is in immediately after friendbot and before Circle's
-    // faucet, and it is the state that otherwise produces a payment failure describing the
-    // asset rather than the account.
-    const { Keypair } = await import("@stellar/stellar-sdk");
-    const fresh = Keypair.random().publicKey();
-
-    const funded = await fetch(`https://friendbot.stellar.org/?addr=${fresh}`);
-    expect(funded.ok).toBe(true);
+    // A test author supplies a funded account with no USDC trustline. Movo must not generate a
+    // keypair, even for an e2e fixture; generating a private key is outside its custody boundary.
+    const fresh = process.env["MOVO_E2E_NO_TRUSTLINE_PAY_TO"];
+    if (fresh === undefined) {
+      throw new Error(
+        "MOVO_E2E_NO_TRUSTLINE_PAY_TO must name a funded testnet account with no USDC trustline.",
+      );
+    }
 
     // The fresh address goes in the `argument` layer, not `config`. The environment carries
     // MOVO_PAY_TO and `env` outranks `config`, so a config-layer value would be silently

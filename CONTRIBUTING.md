@@ -1,14 +1,21 @@
 # Contributing to Movo
 
 Thank you for considering a contribution. Movo sits in a payment path, so this document is
-more prescriptive than most. Please read the two hard rules first.
+more prescriptive than most. Please read the hard rules first.
 
 ## Hard rule 1 — the x402 narrow waist
 
-**Only files under `packages/core/src/protocol/**` may import from `@x402/*`.**
+**Only files under `packages/core/src/protocol/**` may import from `@x402/*`** — with one
+exception: `tests/e2e/**` and `tests/conformance/**` import `@x402/*` directly, because those
+suites deliberately act as an unmodified third-party buyer and are not part of Movo's internal
+architecture. `tests/integration/**` is *not* exempt and follows the rule like everything else.
 
-Everywhere else, import what you need from `@movoframework/core`, re-exporting through the protocol
-module if it is not already exposed.
+Everywhere else, import what you need from `@movoframework/core`, re-exporting through the
+protocol module if it is not already exposed. Note that some re-exports live at a subpath
+rather than the package root — `@movoframework/core/server`, for instance, carries the
+`@x402/express`-derived exports specifically so that importing the pure, network-free root
+entry never pulls in an HTTP framework. Check the package's `exports` map before assuming
+something belongs at the root.
 
 The rule is enforced by `style/noRestrictedImports` in `biome.jsonc` and is proven to fire by
 `tests/unit/narrow-waist.test.ts`. It exists because `@x402/*` is the protocol source of truth,
@@ -89,6 +96,65 @@ must be a literal; `tests/unit/scope-drift.test.ts` covers that case by assertin
 Apply the rule to anything new. If you add a gate, derive its patterns from a constant and
 generate its fixtures from the same constant.
 
+## Hard rule 5 — a plausible fake is worse than a missing implementation
+
+**Before implementing any check against real external state — a network call, a contract
+read, a signed payload, a settled transaction — verify the check fails when the real thing is
+genuinely absent. Passing when handed a plausible value is not sufficient evidence that it
+works.**
+
+A stub, a placeholder, or a fixture that typechecks or passes without doing the real thing is
+more dangerous than no implementation at all, because its presence signals nothing is wrong.
+Three separate instances of this shape were caught before merge across the project's first two
+milestones: a resource-type alias that typechecked while its schema variance ran backwards,
+breaking the ordinary multi-resource case that every existing test happened not to exercise; a
+payment context object built from empty strings and a hardcoded network, which would have lied
+silently to any handler that read it; and a decimals check that stubbed its contract read and
+always returned `"unknown"`. None were caught by the mechanism they most resembled satisfying —
+a type system, a test suite, a lint rule. Each was caught by a stricter downstream check or a
+second look.
+
+When you write a test for something that touches real state, write it so that removing the
+real behaviour and leaving only a plausible-looking placeholder makes the test fail. If it
+would still pass, the test is not testing what you think it is.
+
+## Hard rule 6 — later milestones stay behind their gate
+
+**If implementing something in the milestone you are working on would require building the HTTP
+`verify`/`settle`/`supported` surface — parsing or serialising a facilitator request or
+response — stop. That is the M6 facilitator service, regardless of which package the code
+would live in or how small its intended audience is.**
+
+M6 exists behind an explicit decision gate (spec §26) precisely so that Movo does not commit to
+operating facilitator infrastructure by default. A convenience method added to a testing
+utility that happens to expose the same three routes is the same commitment made silently,
+without the licence review, the conformance discipline, or the non-custody testing that §24
+requires of the real thing. This applies by analogy to any core-track milestone reaching for a
+capability that a later, gated milestone (M6 or M7) exists specifically to decide whether to
+build.
+
+If your milestone's own specification appears to ask for this, that is a specification
+conflict — apply Hard rule 7, not this one's exception.
+
+## Hard rule 7 — on conflict, stop and report
+
+**If you find a genuine conflict between what the specification says, what a prior amendment
+says, or what upstream actually does, stop. Do not guess between two readings and do not
+silently redesign around the conflict.** Report exactly what conflicts, what you verified from
+the installed declarations or the amendments already on file, and what a resolution would need
+to preserve. A short spec amendment, written once, is worth more than a plausible guess reached
+independently by whoever hits the same seam next.
+
+This has already caught three real issues before any code was written on top of a wrong
+assumption — worth more each time than the session it cost to pause.
+
+## Hard rule 5 — do not smuggle gated infrastructure into the core track
+
+**Does this feature quietly build an M6/M7 deliverable inside an earlier milestone?** In
+particular, core-track code must not parse or serialise HTTP request/response bodies for
+facilitator `verify`, `settle`, or `supported` endpoints. That is a facilitator service even if
+it is small or test-only, and belongs behind the M6 decision gate.
+
 ## Getting set up
 
 Node.js ≥22 and pnpm 10.x.
@@ -126,10 +192,11 @@ CLA.
 ## Milestone discipline
 
 Movo is built one milestone at a time and the milestones are specified in
-`docs/context/MOVO_FINAL_ARCHITECTURE_SPEC.md` §10. **Work from a later milestone does not
-belong in a PR for an earlier one**, even when it is small and obviously needed later. If you
-hit a genuine conflict between the specification and reality, stop and open an issue
-explaining it rather than redesigning around it.
+`docs/context/MOVO_FINAL_ARCHITECTURE_SPEC.md` §10, as corrected by the spec amendments in
+`docs/context/`. **Work from a later milestone does not belong in a PR for an earlier one**,
+even when it is small and obviously needed later — see Hard rule 6. If you hit a genuine
+conflict between the specification and reality, stop and open an issue explaining it rather
+than redesigning around it — see Hard rule 7.
 
 ## PR checklist
 
@@ -144,6 +211,10 @@ Every PR must satisfy all of these (spec §16.3):
 - [ ] Narrow-waist rule respected
 - [ ] Any new gate has a proof-of-failure fixture and a test asserting it fires (hard rule 3)
 - [ ] No identifier written out twice; new constants are single-sourced and tested (hard rule 4)
+- [ ] Any check against real external state fails when the real thing is absent, not only when
+      handed a plausible value (hard rule 5)
+- [ ] No code parses or serialises the facilitator `verify`/`settle`/`supported` HTTP surface
+      outside M6 (hard rule 6)
 - [ ] Documentation updated; every new code block compiles (`pnpm check:docs`)
 - [ ] Public API changes documented and a changeset added
 - [ ] Security implications stated
@@ -159,6 +230,12 @@ Every runtime dependency needs written justification in the PR description, nami
 and why a Node built-in will not do. Prefer `node:util`'s `parseArgs`, `node:sqlite`,
 `node --watch` and similar over a package. `@x402/*` dependencies are **exact-pinned** — no
 `^`, no `~`. Caret ranges are fine for everything else.
+
+A package's `dependencies` list is itself governed by the boundaries in the spec's package
+register (§3.1) — for example, `@movoframework/server` must never depend on
+`@movoframework/testing`, even in service of a convenience method. If a dependency you want to
+add would violate a stated boundary, that is very likely Hard rule 6 or Hard rule 7, not a
+reason to add an exception.
 
 ## Reporting problems
 

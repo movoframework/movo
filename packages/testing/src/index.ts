@@ -10,7 +10,12 @@ export {
   type MockFacilitatorCall,
   type MockFacilitatorOutcome,
 } from "./mock-facilitator.js";
-export { cloneSignedPayment, PAYMENT_SCENARIOS, type PaymentScenario } from "./scenarios.js";
+export {
+  cloneSignedPayment,
+  mutateSignedPayment,
+  PAYMENT_SCENARIOS,
+  type PaymentScenario,
+} from "./scenarios.js";
 export { type PaidServer, type WithPaidServerOptions, withPaidServer } from "./with-paid-server.js";
 
 /** The published version of this package. */

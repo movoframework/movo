@@ -1,8 +1,22 @@
-/**
- * @movoframework/testing — Facilitator fixtures, the payment failure matrix and matchers.
- *
- * M0 establishes the package skeleton, the build graph and the compliance gates. The
- * public API of this package is specified in §5 of the architecture spec and is
- * implemented in a later milestone; at M0 the only export is the package version.
- */
+/** Movo's in-process payment-test toolkit. */
+export {
+  createInProcessFacilitator,
+  type InProcessFacilitatorOptions,
+} from "./in-process-facilitator.js";
+export { assertNoSecretsLogged, movoMatchers } from "./matchers.js";
+export {
+  MOCK_TRANSACTION_REFERENCE,
+  MockFacilitator,
+  type MockFacilitatorCall,
+  type MockFacilitatorOutcome,
+} from "./mock-facilitator.js";
+export {
+  cloneSignedPayment,
+  mutateSignedPayment,
+  PAYMENT_SCENARIOS,
+  type PaymentScenario,
+} from "./scenarios.js";
+export { type PaidServer, type WithPaidServerOptions, withPaidServer } from "./with-paid-server.js";
+
+/** The published version of this package. */
 export const VERSION: string = "0.0.0";

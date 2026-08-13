@@ -20,5 +20,13 @@
   "publishConfig": {
     "access": "public",
     "provenance": true
+  },
+  "dependencies": {
+    "@movoframework/core": "workspace:*",
+    "@movoframework/server": "workspace:*"
+  },
+  "devDependencies": {
+    "express": "5.2.1",
+    "vitest": "4.1.10"
   }
 }

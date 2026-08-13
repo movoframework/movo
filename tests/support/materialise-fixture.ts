@@ -27,6 +27,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { MOVO_SCOPE } from "../../packages/core/src/identity.ts";
 import { PAYMENT_HEADERS } from "../../packages/core/src/protocol/index.ts";
+import { KEY_GENERATION_API } from "../../scripts/check-key-generation.ts";
 
 /**
  * Placeholders substituted into every `.tmpl` fixture.
@@ -39,6 +40,7 @@ const PLACEHOLDERS: ReadonlyMap<string, string> = new Map([
   ["__PAYMENT_SIGNATURE_HEADER__", PAYMENT_HEADERS.signature],
   ["__PAYMENT_REQUIRED_HEADER__", PAYMENT_HEADERS.required],
   ["__PAYMENT_RESPONSE_HEADER__", PAYMENT_HEADERS.response],
+  ["__KEY_GENERATION_API__", KEY_GENERATION_API],
 ]);
 
 const TEMPLATE_SUFFIX = ".tmpl";

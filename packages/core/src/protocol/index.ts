@@ -80,7 +80,7 @@ export {
 // decimal count that upstream already exports is precisely the duplication that produces a
 // silent money bug the day one of the two copies changes.
 
-export type { RpcConfig } from "@x402/stellar";
+export type { FacilitatorStellarSigner, RpcConfig } from "@x402/stellar";
 export {
   convertToTokenAmount,
   DEFAULT_ESTIMATED_LEDGER_SECONDS,

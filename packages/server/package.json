@@ -22,7 +22,8 @@
     "provenance": true
   },
   "dependencies": {
-    "@movoframework/core": "workspace:*"
+    "@movoframework/core": "workspace:*",
+    "@movoframework/bazaar": "workspace:*"
   },
   "peerDependencies": {
     "express": "^4 || ^5"

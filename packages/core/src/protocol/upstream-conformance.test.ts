@@ -86,3 +86,68 @@ describe("upstream declarations still have the shapes Movo compiles against", ()
     expect(STELLAR_TESTNET_CAIP2).toBe("stellar:testnet");
   });
 });
+
+describe("the Bazaar surface, as installed", () => {
+  it("exposes one declareDiscoveryExtension, not a separate MCP variant (amendment 007 §3.1)", async () => {
+    // Spec §22 names `declareMcpDiscoveryExtension` alongside `declareDiscoveryExtension`. The
+    // installed package exports only the latter, dispatching on `toolName`. Asserted rather
+    // than assumed, because deriveDiscovery's MCP path depends on it.
+    const bazaar = await import("@x402/extensions/bazaar");
+
+    expect(typeof bazaar.declareDiscoveryExtension).toBe("function");
+    expect("declareMcpDiscoveryExtension" in bazaar).toBe(false);
+  });
+
+  it("still exports no public EXTENSION-RESPONSES decoder (amendment 007 §3.2)", async () => {
+    // The gap that justifies `readCatalogOutcome` existing in Movo at all. If upstream ever
+    // ships one, this fails and Movo should delete its decoder and delegate.
+    const [core, http, extensions] = await Promise.all([
+      import("@x402/core"),
+      import("@x402/core/http"),
+      import("@x402/extensions/bazaar"),
+    ]);
+
+    const names = [...Object.keys(core), ...Object.keys(http), ...Object.keys(extensions)];
+    const decoders = names.filter(
+      (name) => /extensionresponse/i.test(name) && /decode|parse|read/i.test(name),
+    );
+
+    expect(decoders).toEqual([]);
+  });
+
+  it("validates service metadata, icon URLs and route templates itself (D3)", async () => {
+    // The D3 baseline, asserted so that "upstream already does this" is a checked claim rather
+    // than a remembered one. Every rule below is a rule Movo must NOT reimplement.
+    const bazaar = await import("@x402/extensions/bazaar");
+
+    expect(bazaar.isValidServiceName("Example Weather")).toBe(true);
+    expect(bazaar.isValidServiceName("x".repeat(33))).toBe(false);
+    expect(bazaar.isValidServiceName("café")).toBe(false);
+
+    expect(bazaar.isValidIconUrl("https://example.com/i.png")).toBe(true);
+    expect(bazaar.isValidIconUrl("http://127.0.0.1/i.png")).toBe(false);
+    expect(bazaar.isValidIconUrl("http://localhost/i.png")).toBe(false);
+    expect(bazaar.isValidIconUrl("https://192.168.1.5/i.png")).toBe(false);
+
+    expect(bazaar.sanitizeTags(["a", "b", "c", "d", "e", "f"])).toHaveLength(5);
+    expect(bazaar.sanitizeTags(["café", "ok"])).toEqual(["ok"]);
+
+    // Percent-encoded traversal, which the discarded WIP reimplemented as its own contribution.
+    expect(bazaar.validateRouteTemplate("%2e%2e%2f")).toBeUndefined();
+    expect(bazaar.validateRouteTemplate("/../etc")).toBeUndefined();
+    expect(bazaar.validateRouteTemplate("/users/:id")).toBe("/users/:id");
+  });
+
+  it("returns { valid, errors } from its validators rather than throwing", async () => {
+    // The specific defect in the discarded validate.ts: it wrapped upstream in a try/catch and
+    // discarded the return value, so the one real delegation in the file was a no-op catching
+    // an exception that never comes (amendment 007 §1).
+    const bazaar = await import("@x402/extensions/bazaar");
+
+    const result = bazaar.validateDiscoveryExtensionSpec({ nonsense: true });
+
+    expect(result).toHaveProperty("valid");
+    expect(result.valid).toBe(false);
+    expect(Array.isArray(result.errors)).toBe(true);
+  });
+});

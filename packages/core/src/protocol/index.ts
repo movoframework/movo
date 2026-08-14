@@ -58,6 +58,7 @@ export type {
 export type { PaymentOption } from "@x402/core/http";
 export type { FacilitatorClient, RouteConfig, RoutesConfig } from "@x402/core/server";
 export { checkIfBazaarNeeded } from "@x402/core/server";
+export type { PaymentPolicy } from "@x402/fetch";
 
 // ─── Header codecs (@x402/core/http) ─────────────────────────────────────────────────────
 //

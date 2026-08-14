@@ -34,12 +34,42 @@ export type MoneyString = `$${string}`;
 /** What a resource or config may state as a price. */
 export type MovoPrice = MoneyString | AssetAmount;
 
-/** Bazaar discovery metadata declared on a resource. Derivation itself lands in M4. */
+/**
+ * Bazaar discovery metadata declared on a resource.
+ *
+ * Every field is optional: `discovery: {}` is a complete declaration, because the method, path,
+ * description and schemas are already on the resource and derivation reads them from there.
+ * What is here is what derivation cannot infer.
+ *
+ * The declaration is deliberately just data — no JSON Schema type, no MCP type, nothing that
+ * would pull the Bazaar surface into the pure core. `@movoframework/bazaar` interprets it.
+ */
 export interface DiscoveryDeclaration {
-  /** An example input, shown to agents choosing whether to call this resource. */
+  /**
+   * An example input, shown to agents choosing whether to call this resource.
+   *
+   * Worth supplying whenever the input schema has required fields: upstream validates the
+   * example against the schema, so an absent one produces a declaration that fails its own
+   * consistency check.
+   */
   readonly example?: unknown;
   /** An example output. */
   readonly outputExample?: unknown;
+  /**
+   * An explicit JSON Schema for the input, overriding derivation.
+   *
+   * Needed when the validator's vendor has no JSON Schema converter, and useful when derivation
+   * is lossy — a transform or a branded type describes something JSON Schema cannot.
+   */
+  readonly inputSchema?: Record<string, unknown>;
+  /** An explicit JSON Schema for the output. */
+  readonly outputSchema?: Record<string, unknown>;
+  /** Body encoding, for methods that carry a body. Defaults to `"json"`. */
+  readonly bodyType?: "json" | "form-data" | "text";
+  /** Declares the resource as an MCP tool rather than an HTTP endpoint. */
+  readonly toolName?: string;
+  /** MCP transport, when `toolName` is set. */
+  readonly transport?: string;
 }
 
 /**

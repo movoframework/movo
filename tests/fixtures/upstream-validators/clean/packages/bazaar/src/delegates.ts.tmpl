@@ -1,0 +1,9 @@
+// CLEAN FIXTURE: calls upstream, declares nothing of its own.
+import { isValidIconUrl, sanitizeTags } from "__MOVO_SCOPE__/core/bazaar";
+
+export function escalate(iconUrl: string, tags: string[]): string[] {
+  const problems: string[] = [];
+  if (!isValidIconUrl(iconUrl)) problems.push("iconUrl would be dropped");
+  if ((sanitizeTags(tags) ?? []).length !== tags.length) problems.push("tags would be dropped");
+  return problems;
+}

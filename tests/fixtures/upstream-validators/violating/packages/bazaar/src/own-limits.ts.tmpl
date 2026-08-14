@@ -1,0 +1,9 @@
+// VIOLATION FIXTURE: restating upstream's limits as local constants.
+import { sanitizeTags } from "__MOVO_SCOPE__/core/bazaar";
+
+export const CONSTRAINTS = {
+  serviceName: { maxLength: 32 },
+  tags: { maxCount: 5 },
+};
+
+export const keep = sanitizeTags;

@@ -1,0 +1,7 @@
+// VIOLATION FIXTURE: re-deriving upstream's character rule as a regex.
+import { sanitizeTags } from "__MOVO_SCOPE__/core/bazaar";
+
+const PRINTABLE_ASCII = /^[\u0020-\u007e]+$/;
+
+export const check = (value: string): boolean => PRINTABLE_ASCII.test(value);
+export const keep = sanitizeTags;

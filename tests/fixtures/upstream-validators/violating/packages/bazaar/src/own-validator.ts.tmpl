@@ -1,0 +1,8 @@
+// VIOLATION FIXTURE: a Movo-owned validator, which D3 forbids.
+import { sanitizeTags } from "__MOVO_SCOPE__/core/bazaar";
+
+export function isValidServiceName(name: string): boolean {
+  return name.length <= 32;
+}
+
+export const keep = sanitizeTags;

@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd \"c:/Users/Ebubechi/Documents/codes/my-projects/movo\")",
+      "Bash(node -e ' *)"
+    ]
+  }
+}

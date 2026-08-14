@@ -1,0 +1,17 @@
+{
+  "name": "@movoframework/example-agent-buyer",
+  "version": "0.0.0",
+  "private": true,
+  "description": "A buyer that discovers a resource, enforces a budget, and pays for it",
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "start": "node --experimental-strip-types src/buy.ts"
+  },
+  "dependencies": {
+    "@movoframework/bazaar": "workspace:*",
+    "@movoframework/client": "workspace:*",
+    "@movoframework/core": "workspace:*",
+    "@movoframework/example-discoverable-api": "workspace:*"
+  }
+}

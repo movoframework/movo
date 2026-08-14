@@ -49,6 +49,9 @@ jobs:
       - name: Protocol purity
         run: pnpm check:protocol-purity
 
+      - name: Upstream validators (AC4.8)
+        run: pnpm check:upstream-validators
+
       - name: Typecheck
         run: pnpm typecheck
 

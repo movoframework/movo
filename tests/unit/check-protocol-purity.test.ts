@@ -38,17 +38,27 @@ afterAll(() => {
 
 function runGate(root: string): { status: number; stdout: string; stderr: string } {
   try {
+    // An explicit timeout so that a hung child is distinguishable from a wrong exit code. This
+    // spawns a Node process while the rest of the suite is running in parallel, and a bare
+    // "expected 0 to be 1" gives a reader nothing to work with when it is contention rather
+    // than a gate regression.
     const stdout = execFileSync(process.execPath, [SCRIPT, "--root", root], {
       encoding: "utf8",
       cwd: REPO_ROOT,
+      timeout: 60_000,
     });
     return { status: 0, stdout, stderr: "" };
   } catch (error) {
-    const failure = error as { status?: number; stdout?: string; stderr?: string };
+    const failure = error as {
+      status?: number;
+      stdout?: string;
+      stderr?: string;
+      signal?: string;
+    };
     return {
       status: failure.status ?? -1,
       stdout: failure.stdout ?? "",
-      stderr: failure.stderr ?? "",
+      stderr: `${failure.stderr ?? ""}${failure.signal === undefined ? "" : `\n[killed by signal ${failure.signal}]`}`,
     };
   }
 }

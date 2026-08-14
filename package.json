@@ -27,7 +27,8 @@
     "generate:compat": "node scripts/generate-compatibility.ts",
     "generate:errors": "node scripts/generate-error-docs.ts",
     "check:protocol-purity": "node scripts/check-protocol-purity.ts",
-    "check:key-generation": "node scripts/check-key-generation.ts"
+    "check:key-generation": "node scripts/check-key-generation.ts",
+    "check:upstream-validators": "node scripts/check-upstream-validators.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.7",
@@ -43,6 +44,7 @@
     "@x402/stellar": "2.21.0",
     "express": "5.2.1",
     "typescript": "7.0.2",
-    "vitest": "4.1.10"
+    "vitest": "4.1.10",
+    "zod": "3.25.76"
   }
 }

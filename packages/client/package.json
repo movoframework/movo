@@ -20,5 +20,9 @@
   "publishConfig": {
     "access": "public",
     "provenance": true
+  },
+  "dependencies": {
+    "@movoframework/core": "workspace:*",
+    "@movoframework/bazaar": "workspace:*"
   }
 }

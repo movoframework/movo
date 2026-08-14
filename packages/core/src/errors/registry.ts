@@ -70,7 +70,16 @@ export type MovoErrorCode =
   | "MOVO_E_ROUTE_DUPLICATE"
   | "MOVO_E_DISCOVERY_DISABLED"
   | "MOVO_E_APP_INVALID"
+  | "MOVO_E_DISCOVERY_SERVICE_NAME_INVALID"
+  | "MOVO_E_DISCOVERY_TAGS_INVALID"
+  | "MOVO_E_DISCOVERY_ICON_URL_INVALID"
+  | "MOVO_E_DISCOVERY_ROUTE_TEMPLATE_INVALID"
+  | "MOVO_E_DISCOVERY_EXTENSION_INVALID"
+  | "MOVO_E_BUDGET_EXCEEDED"
+  | "MOVO_E_BUDGET_PAYTO_NOT_ALLOWED"
+  | "MOVO_E_BUDGET_NETWORK_NOT_ALLOWED"
   | "MOVO_W_PARAM_UNDESCRIBED"
+  | "MOVO_W_DISCOVERY_SCHEMA_UNDERIVED"
   | "MOVO_W_RESPONSE_NOT_STREAMED";
 
 /** The registry itself. */
@@ -194,6 +203,63 @@ export const MOVO_ERROR_REGISTRY: { readonly [K in MovoErrorCode]: ErrorRegistry
     severity: "error",
     meaning: "defineApp was given something other than an array of resources.",
     fix: "Pass { resources: [ … ] } with each entry produced by defineResource.",
+  },
+  MOVO_E_DISCOVERY_SERVICE_NAME_INVALID: {
+    code: "MOVO_E_DISCOVERY_SERVICE_NAME_INVALID",
+    severity: "error",
+    meaning:
+      "serviceName would be silently dropped from the Bazaar declaration by upstream validation.",
+    fix: "Use at most 32 printable ASCII characters (U+0020–U+007E). Upstream drops an invalid serviceName without complaint at runtime, so your listing would appear unnamed and you would not be told why — which is why Movo raises it here instead.",
+  },
+  MOVO_E_DISCOVERY_TAGS_INVALID: {
+    code: "MOVO_E_DISCOVERY_TAGS_INVALID",
+    severity: "error",
+    meaning: "One or more tags would be silently dropped by upstream validation.",
+    fix: "Use at most 5 tags, each at most 32 printable ASCII characters. Upstream truncates and drops silently, so a tag you rely on for discovery can vanish without any signal.",
+  },
+  MOVO_E_DISCOVERY_ICON_URL_INVALID: {
+    code: "MOVO_E_DISCOVERY_ICON_URL_INVALID",
+    severity: "error",
+    meaning: "iconUrl would be silently dropped by upstream validation.",
+    fix: "Use an absolute https URL with a public hostname. Loopback addresses, private IP ranges and IP literals are rejected as an SSRF control — a catalog fetches this URL, so it must not point at anything inside your network.",
+  },
+  MOVO_E_DISCOVERY_ROUTE_TEMPLATE_INVALID: {
+    code: "MOVO_E_DISCOVERY_ROUTE_TEMPLATE_INVALID",
+    severity: "error",
+    meaning: "The resource path is not a valid Bazaar route template.",
+    fix: "Use an absolute path with :name parameters and no traversal segments. This is the catalog key a buyer finds your resource under; if it is invalid the resource cannot be catalogued at all.",
+  },
+  MOVO_E_DISCOVERY_EXTENSION_INVALID: {
+    code: "MOVO_E_DISCOVERY_EXTENSION_INVALID",
+    severity: "error",
+    meaning: "The derived Bazaar declaration failed upstream specification validation.",
+    fix: "Read the accompanying detail — it carries upstream's own error text verbatim. The declaration is derived from your resource, so the fix is usually in the resource's discovery block, input schema or method.",
+  },
+  MOVO_E_BUDGET_EXCEEDED: {
+    code: "MOVO_E_BUDGET_EXCEEDED",
+    severity: "error",
+    meaning: "A payment offer exceeds the configured budget and was refused before signing.",
+    fix: "Raise maxAmountPerRequest or maxTotalSpend if the offer is legitimate. A hostile server can name any amount in a 402, so this refusal is a security control rather than a convenience — no signature was produced.",
+  },
+  MOVO_E_BUDGET_PAYTO_NOT_ALLOWED: {
+    code: "MOVO_E_BUDGET_PAYTO_NOT_ALLOWED",
+    severity: "error",
+    meaning:
+      "A payment offer names a payTo address outside the allowed list; refused before signing.",
+    fix: "Add the address to allowedPayTo if you intend to pay it. A server can name any recipient in a 402, and the buyer is the only party able to refuse.",
+  },
+  MOVO_E_BUDGET_NETWORK_NOT_ALLOWED: {
+    code: "MOVO_E_BUDGET_NETWORK_NOT_ALLOWED",
+    severity: "error",
+    meaning: "A payment offer names a network outside the allowed list; refused before signing.",
+    fix: "Add the network to allowedNetworks if you intend to settle there. This is what stops a testnet-only buyer being talked onto mainnet by a 402.",
+  },
+  MOVO_W_DISCOVERY_SCHEMA_UNDERIVED: {
+    code: "MOVO_W_DISCOVERY_SCHEMA_UNDERIVED",
+    severity: "warning",
+    meaning:
+      "An input schema could not be converted to JSON Schema, so the declaration carries none.",
+    fix: "Pass an explicit inputSchema in the resource's discovery block. Standard Schema describes validation but not JSON Schema conversion, so Movo can only derive automatically for vendors that expose a converter — currently Zod. An agent reading your listing has no parameter documentation without it.",
   },
   MOVO_W_PARAM_UNDESCRIBED: {
     code: "MOVO_W_PARAM_UNDESCRIBED",

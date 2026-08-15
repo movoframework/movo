@@ -32,6 +32,29 @@ What Movo adds is the layer nobody upstream provides:
 rename its exports; takes custody of funds; accepts a payer private key server-side; or
 collects telemetry of any kind.
 
+## Telemetry: none
+
+**Movo collects nothing.** No usage counts, no error reports, no version pings, no opt-out
+beacon. The CLI makes no network request that your configuration did not ask for: `movo doctor`
+reaches Horizon, the Soroban RPC and the facilitator *you* configured, and nothing else; `movo
+dev` and `movo test` reach nothing at all.
+
+There is no analytics dependency in the tree, and the licence gate would flag one arriving.
+Stated here rather than in a policy page because a framework that handles payment configuration
+and Stellar addresses has a higher bar than a framework that does not.
+
+## Getting started
+
+```bash
+npm create movo-app my-api
+cd my-api && npm install
+cp .env.example .env      # set MOVO_PAY_TO to your Stellar address
+npx movo doctor           # checks everything before you need it
+npx movo dev
+```
+
+Full walkthrough to a settled testnet payment: [docs/quickstart.md](docs/quickstart.md).
+
 ## The narrow waist
 
 Only files under `packages/core/src/protocol/**` may import from `@x402/*`. The rule is

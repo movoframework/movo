@@ -77,6 +77,12 @@ jobs:
       - name: Test (unit + integration)
         run: pnpm test
 
+      # The scaffold templates are workspace members, so their generated tests run here too.
+      # This is what keeps them honest: a template that stops compiling against the current API
+      # is the first code a new user reads, and it would otherwise rot invisibly.
+      - name: Test (scaffold templates)
+        run: pnpm test:templates
+
   # Sibling of `verify` with no `needs:` — a secret scan must not be gated behind a build.
   # We invoke the gitleaks binary directly rather than gitleaks/gitleaks-action: only the
   # action wrapper is EULA-encumbered and demands a paid GITLEAKS_LICENSE for org-owned

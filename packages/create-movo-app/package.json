@@ -8,6 +8,9 @@
   "engines": {
     "node": ">=22"
   },
+  "bin": {
+    "create-movo-app": "./dist/bin.js"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -15,7 +18,8 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "templates"
   ],
   "publishConfig": {
     "access": "public",

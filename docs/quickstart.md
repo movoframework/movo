@@ -3,7 +3,7 @@
 What you will have at the end: an HTTP API with one paid route, and a real USDC payment settled
 on Stellar testnet, confirmed on-chain.
 
-You need Node ≥22, pnpm 10.x, and about fifteen minutes — most of it waiting on a captcha.
+You need Node ≥22 and about fifteen minutes — most of it waiting on a captcha.
 
 ## 1. Accounts, funding, trustlines
 
@@ -12,94 +12,102 @@ trustline — is the one that, if skipped, produces a payment failure whose mess
 about the account that caused it.
 
 You need two accounts: a **seller** (receives; needs a trustline) and a **buyer** (pays; needs a
-trustline *and* a USDC balance).
+trustline *and* a USDC balance from [Circle's faucet](https://faucet.circle.com), which is
+captcha-gated).
 
-## 2. Declare a resource
+Keep both addresses to hand. You do not need to configure anything yet.
 
-```ts
-import { defineApp, defineResource } from "@movoframework/core";
+## 2. Create the project
 
-const weather = defineResource({
-  method: "GET",
-  path: "/weather/:city",
-  price: "$0.001",
-  description: "Current weather conditions for a city",
-  mimeType: "application/json",
-  handler: (ctx) => ({ city: ctx.params["city"], tempC: 14, conditions: "foggy" }),
-});
-
-export default defineApp({ resources: [weather] });
+```bash
+npm create movo-app my-api
+cd my-api
+npm install
 ```
 
-One declaration carries the route, the price and the handler. There is no routes object to keep in
-sync and no discovery metadata duplicating either.
+That is a real, working project: `movo.config.ts`, one resource, a server, a test, an
+`.env.example`, and a README with these same commands. `--template discoverable` gives you the
+same thing plus Bazaar discovery metadata and a buyer script.
 
-## 3. Configure
-
-```ts
-import { defineConfig } from "@movoframework/core";
-
-export default defineConfig({
-  env: "testnet",
-  network: "stellar:testnet",
-  payTo: process.env["MOVO_PAY_TO"],
-  facilitator: { url: "https://www.x402.org/facilitator" },
-});
+```bash
+cp .env.example .env
 ```
 
-`MOVO_PAY_TO` is your seller's **public** address — the `G…` one. It is published in every 402
-response. Movo rejects an `S…` secret seed here at startup rather than letting it reach the wire.
+Then set `MOVO_PAY_TO` in `.env` to your **seller's** `G…` address. It is a public address, never
+a secret — a Movo resource server signs nothing.
 
-The default facilitator is free, needs no key, and sponsors network fees: your buyer pays the
-asset amount and none of the Stellar fee.
+## 3. Run the doctor
 
-## 4. Check before you run
-
-```ts no-check
-import { resolveConfig } from "@movoframework/core";
-import { preflight } from "@movoframework/stellar";
-
-for (const finding of await preflight(resolveConfig())) {
-  console.log(`[${finding.level}] ${finding.title}`);
-  if (finding.fix) console.log(`  fix: ${finding.fix}`);
-}
+```bash
+npx movo doctor
 ```
 
-Six checks, run most-fundamental-first. Fix anything at `error` level before continuing — each one
-carries a copy-pasteable remedy.
+This is the step that saves the afternoon. It checks your Node version, your `@x402/*` pins, your
+configuration, whether the `payTo` account exists and is funded, whether it has a trustline for
+the asset you are charging in, whether the asset contract resolves, whether your facilitator is
+reachable and advertises your network — and prints a fix for each thing it finds.
 
-## 5. Mount and run
+```text
+Resolved configuration
+  env                         testnet                                                   from config
+  network                     stellar:testnet                                           from config
+  payTo                       GCQQ4LGCXPRVCAWY3IK7RUUXYVFVQQ2NAMBUNBUFDG5WLPKPMK4AMQ4E  from env
+  facilitator.url             https://www.x402.org/facilitator                          from config
+  ...
 
-```ts no-check
-import express from "express";
-import { mountExpress } from "@movoframework/server";
-import app from "./app.js";
-import config from "./movo.config.js";
+Environment
+  ok    Node.js version
+        v24.14.0 (minimum 22).
+  ok    @x402/* versions match docs/COMPATIBILITY.md
 
-const server = express();
-server.use(express.json());
+Configuration
+  ok    configuration resolves
+  ok    resources compile
+        1 paid route(s).
 
-server.get("/health", (_request, response) => response.json({ ok: true }));
+Stellar
+  ok    payTo account exists and is funded
+  ok    trustline to the configured asset
+  ...
 
-await mountExpress(server, app, { config: { config } });
-server.listen(4021);
+11 ok  0 warning  0 error
 ```
 
-`/health` is an ordinary Express route the payment middleware never touches. Only paths declared
-through `defineResource` are protected.
+**Fix everything at `error` level before continuing.** Each finding carries a copy-pasteable
+remedy — friendbot's URL for an unfunded account, the Circle faucet for a missing balance.
 
-## 6. See the 402
+The `from …` column is worth a second look. Five configuration layers
+(`default < config < env < resource < argument`) and this table says which one supplied each
+value. When a payment goes somewhere unexpected, this is the answer.
+
+## 4. Start the server
+
+```bash
+npx movo dev
+```
+
+```text
+Facilitator  config
+
+Paid resources  1
+  GET /weather/:city  $0.001  stellar:testnet  →  GCQQ4LGCX…MK4AMQ4E
+
+  listening on http://localhost:4021
+```
+
+## 5. See the 402
 
 ```bash
 curl -i localhost:4021/weather/SFO
 ```
 
-```
+```text
 HTTP/1.1 402 Payment Required
 PAYMENT-REQUIRED: eyJ4NDAyVmVyc2lvbiI6Miwi...
 ```
 
-Decode it to see exactly what is being asked for:
+The body is empty. That is the protocol's shape, not an omission — the payment requirements
+travel in the header. Decode it to see what is being asked for:
 
 ```ts no-check
 import { decodePaymentRequiredHeader } from "@movoframework/core";
@@ -114,29 +122,47 @@ console.log(decoded.accepts[0]);
 `amount` is `10000`, not `0.001`. USDC has 7 decimals, so that is `$0.001` in base units. Movo
 never performs that conversion itself — `@x402/stellar` does it against the asset's real decimals.
 
-## 7. Pay it
+`areFeesSponsored: true` means the facilitator pays the Stellar network fee. Your buyer pays the
+asset amount and nothing else.
 
-The buyer is an ordinary x402 client. Movo has no client package yet (that is M4), and nothing
-here is Movo-specific:
+## 6. Pay it
+
+Set `STELLAR_PRIVATE_KEY` in `.env` to your **buyer's** seed. This is a buyer key; a resource
+server never needs one.
 
 ```ts no-check
-import { wrapFetchWithPayment, x402Client } from "@x402/fetch";
-import { ExactStellarScheme } from "@x402/stellar/exact/client";
-import { createEd25519Signer } from "@x402/stellar";
+import { createBudget, createMovoClient } from "@movoframework/client";
+import { createEd25519Signer } from "@movoframework/core/client";
 
-const client = new x402Client().register(
-  "stellar:testnet",
-  new ExactStellarScheme(createEd25519Signer(process.env.STELLAR_PRIVATE_KEY, "stellar:testnet")),
-);
+const budget = createBudget({
+  maxAmountPerRequest: "10000",          // 0.001 USDC at 7 decimals
+  maxTotalSpend: "100000",
+  allowedNetworks: ["stellar:testnet"],
+});
 
-const paid = await wrapFetchWithPayment(fetch, client)("http://localhost:4021/weather/SFO");
+const client = createMovoClient({
+  signer: createEd25519Signer(process.env["STELLAR_PRIVATE_KEY"], "stellar:testnet"),
+  network: "stellar:testnet",
+  budget,
+});
+
+const paid = await client.fetch("http://localhost:4021/weather/SFO");
 console.log(paid.status);            // 200
 console.log(await paid.json());      // { city: "SFO", tempC: 14, conditions: "foggy" }
 ```
 
-`STELLAR_PRIVATE_KEY` is the **buyer's** secret. It belongs to the client and never to the server.
+The budget is not decoration. A 402 is a **claim**: a server can name any `payTo` and any amount,
+and the facilitator will faithfully settle whatever was signed. The buyer is the only party that
+can refuse, and refusal happens **before** signing — so a refused offer leaves no signed
+authorisation in existence. See [buyer budgets](security/buyer-budgets.md).
 
-## 8. Confirm it on-chain
+If you used `--template discoverable`, all of this is already in `src/buyer.ts`:
+
+```bash
+npm run buyer
+```
+
+## 7. Confirm it on-chain
 
 Do not take the response header's word for it:
 
@@ -152,26 +178,51 @@ This is the step Movo's own e2e suite treats as mandatory. Asserting on the head
 a fabricated settlement pass; fetching the transaction from Horizon asks a source that is neither
 the server nor the facilitator.
 
-Look at `source_account` on that transaction. It is the facilitator's, not the buyer's — which is
-fee sponsorship, visible.
+Look at `source_account` on that transaction. It is the facilitator's, not the buyer's — fee
+sponsorship, visible.
+
+**You are done.** A real payment, settled on Stellar, confirmed independently.
+
+## Running your tests
+
+```bash
+npm test
+```
+
+The generated test needs no keys, no funds and no network — it uses `MockFacilitator`, which makes
+orchestration deterministic. It is not a settlement simulator and does not pretend to be one.
+
+For real settlement in a hermetic loop, with no third-party facilitator:
+
+```bash
+npx movo dev --facilitator in-process
+```
+
+That performs genuine verification and genuine on-chain settlement using your
+`STELLAR_PRIVATE_KEY`. It refuses to run on mainnet.
 
 ## When something goes wrong
 
-Run preflight first; it catches most of it. Beyond that:
+Run `npx movo doctor`; it catches most of it and explains what it finds. Beyond that:
 
 | Symptom | Likely cause |
 |---|---|
 | 402 that never becomes 200 | Buyer has no USDC, or no trustline |
-| Payment rejected, message about the asset | Seller has no trustline — the account at fault is not the one named |
+| Payment rejected, message about the asset | **Seller** has no trustline — the account at fault is not the one named |
 | `MOVO_E_PAYTO_INVALID` at startup | `MOVO_PAY_TO` holds an `S…` seed instead of a `G…` address |
 | `MOVO_E_PUBNET_NOT_ENABLED` | `env: "pubnet"` without `MOVO_ALLOW_PUBNET=1`. Deliberate friction |
-| Payments expire intermittently | Clock skew, or `maxTimeoutSeconds` too small. Both are preflight checks |
+| `MOVO_E_FACILITATOR_PUBNET_REFUSED` | `--facilitator in-process` on mainnet. Use a real facilitator |
+| Cannot find module `./app.js` | Node does not rewrite specifiers. Import `./app.ts` |
+| Payments expire intermittently | Clock skew, or `maxTimeoutSeconds` too small. Both are doctor checks |
 
 Every error code has a page: [error reference](reference/errors.md).
 
 ## What to read next
 
+- [The CLI](cli/overview.md) — all four commands
+- [`movo doctor`](cli/doctor.md) — every check, what it means, how to fix it
 - [Resources](concepts/resources.md) — prices, paths, typed input and output
 - [Configuration](concepts/configuration.md) — the five layers and their provenance
 - [The payment lifecycle](concepts/payment-lifecycle.md) — including why a paid route cannot
   stream, and why a route that 404s costs the buyer nothing
+- [Discovery](bazaar/overview.md) — being found by agents, and what Movo cannot promise

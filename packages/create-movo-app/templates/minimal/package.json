@@ -1,0 +1,28 @@
+{
+  "name": "@movoframework/template-minimal",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Minimal Movo template: Express and one paid route",
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "dev": "movo dev",
+    "doctor": "movo doctor",
+    "test": "vitest run",
+    "start": "node src/server.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@movoframework/cli": "workspace:*",
+    "@movoframework/core": "workspace:*",
+    "@movoframework/server": "workspace:*",
+    "express": "5.2.1"
+  },
+  "devDependencies": {
+    "@movoframework/testing": "workspace:*",
+    "@types/express": "5.0.0",
+    "@types/node": "24.10.1",
+    "typescript": "7.0.2",
+    "vitest": "4.1.10"
+  }
+}

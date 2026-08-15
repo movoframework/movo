@@ -1,11 +1,22 @@
-import type {
-  FacilitatorClient,
-  PaymentPayload,
-  PaymentRequirements,
-  SettleResponse,
-  SupportedResponse,
-  VerifyResponse,
+import {
+  EXACT_SCHEME,
+  type FacilitatorClient,
+  type Network,
+  type PaymentPayload,
+  type PaymentRequirements,
+  type SettleResponse,
+  STELLAR_TESTNET_CAIP2,
+  type SupportedResponse,
+  type VerifyResponse,
 } from "@movoframework/core";
+
+/**
+ * The network the mock advertises by default.
+ *
+ * Derived from the upstream constant rather than written as a literal, so a CAIP-2 identifier
+ * cannot drift between the mock and the code under test.
+ */
+export const MOCK_NETWORK: Network = STELLAR_TESTNET_CAIP2 as Network;
 
 /** Behaviour deliberately simulated by {@link MockFacilitator}. */
 export type MockFacilitatorOutcome =
@@ -35,9 +46,11 @@ export const MOCK_TRANSACTION_REFERENCE = "movo-mock-not-an-on-chain-transaction
 export class MockFacilitator implements FacilitatorClient {
   readonly calls: MockFacilitatorCall[] = [];
   private outcome: MockFacilitatorOutcome;
+  private readonly network: Network;
 
-  constructor(outcome: MockFacilitatorOutcome = { kind: "ok" }) {
+  constructor(outcome: MockFacilitatorOutcome = { kind: "ok" }, network: Network = MOCK_NETWORK) {
     this.outcome = outcome;
+    this.network = network;
   }
 
   setOutcome(outcome: MockFacilitatorOutcome): void {
@@ -48,10 +61,34 @@ export class MockFacilitator implements FacilitatorClient {
     return this.calls.filter((call) => call.operation === operation).length;
   }
 
+  /**
+   * Advertise one supported kind: `exact` on the configured network.
+   *
+   * **This must not be empty**, and the reason is worth recording rather than rediscovering.
+   * Upstream's `x402ResourceServer.initialize` throws "no supported payment kinds loaded from any
+   * facilitator" when every configured facilitator advertises none, so a mock returning `kinds:
+   * []` produces a 500 on the first request and can never serve a 402 at all. It satisfied the
+   * `FacilitatorClient` type, recorded its calls, and was unusable through a real mount — the
+   * plausible-fake shape named in amendment 004 §6.
+   *
+   * `extra.areFeesSponsored` mirrors what the real testnet facilitator advertises, so the
+   * scheme's `enhancePaymentRequirements` takes the same branch it takes in production.
+   */
   async getSupported(): Promise<SupportedResponse> {
     this.calls.push({ operation: "supported" });
     this.raiseIfProgrammed("supported");
-    return { kinds: [], extensions: [], signers: {} };
+    return {
+      kinds: [
+        {
+          x402Version: 2,
+          scheme: EXACT_SCHEME,
+          network: this.network,
+          extra: { areFeesSponsored: true },
+        },
+      ],
+      extensions: [],
+      signers: {},
+    };
   }
 
   async verify(

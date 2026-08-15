@@ -28,3 +28,11 @@ Thumbs.db
 
 # Transient workspace written by scripts/check-docs-codeblocks.ts
 packages/core/.docs-codeblocks-*/
+
+# Throwaway projects written by the CLI and scaffold suites.
+#
+# At the repository root rather than under node_modules, and that is load-bearing: Node refuses
+# to strip types for any file under node_modules ("Stripping types is currently unsupported for
+# files under node_modules"), so a fixture placed there would exercise Vitest's transform instead
+# of the loader a real `movo` invocation uses — passing while the real path was broken.
+.movo-tmp/

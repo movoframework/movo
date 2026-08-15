@@ -2,6 +2,9 @@ packages:
   - "packages/*"
   - "apps/*"
   - "examples/*"
+  # Templates are real workspace members so CI compiles, lints and tests them. A template
+  # kept outside the matrix rots within weeks, and rots invisibly.
+  - "packages/create-movo-app/templates/*"
 
 # Only these packages are permitted to run install lifecycle scripts. Everything
 # else installs inert. This is a supply-chain control (spec §14): a malicious

@@ -5,6 +5,7 @@ export {
 } from "./in-process-facilitator.js";
 export { assertNoSecretsLogged, movoMatchers } from "./matchers.js";
 export {
+  MOCK_NETWORK,
   MOCK_TRANSACTION_REFERENCE,
   MockFacilitator,
   type MockFacilitatorCall,

@@ -8,6 +8,9 @@
   "engines": {
     "node": ">=22"
   },
+  "bin": {
+    "movo": "./dist/bin.js"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -20,5 +23,28 @@
   "publishConfig": {
     "access": "public",
     "provenance": true
+  },
+  "dependencies": {
+    "@movoframework/bazaar": "workspace:*",
+    "@movoframework/core": "workspace:*",
+    "@movoframework/server": "workspace:*",
+    "@movoframework/stellar": "workspace:*",
+    "@movoframework/testing": "workspace:*"
+  },
+  "peerDependencies": {
+    "express": "^4 || ^5",
+    "vitest": "^3 || ^4"
+  },
+  "peerDependenciesMeta": {
+    "express": {
+      "optional": true
+    },
+    "vitest": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "express": "5.2.1",
+    "vitest": "4.1.10"
   }
 }

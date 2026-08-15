@@ -104,7 +104,26 @@ seed, the API key and the encoded payment payload across every log record and ev
 - **Pubnet.** Nothing here was run against `stellar:pubnet`, and the e2e suite refuses to (AC2.8).
 - **Streaming.** Responses behind a paid route do not stream, by construction. See
   `docs/concepts/payment-lifecycle.md`.
-- **A stock-client conformance run.** Spec §1.16 layer 4 calls for an unmodified upstream client
-  against a Movo app as separate evidence. The e2e buyer already uses stock `@x402/fetch` and
-  `@x402/stellar`, which is most of the way there, but the dedicated conformance suite is not
-  yet written.
+- **A dedicated stock-client conformance suite — deferred to M8, deliberately and in writing.**
+
+  Spec §1.16 layer 4 calls for an unmodified upstream client against a Movo app as evidence
+  distinct from the e2e suite. Amendment 004 §8 left this open; amendment 008 §7 required M5 or
+  M8 to either write it or re-scope it explicitly, rather than let it drift across another
+  milestone report. **This is that explicit resolution: it is not re-scoped, and it is not
+  written. It is assigned to M8.**
+
+  The reasoning, so the decision can be argued with rather than merely found. The evidentiary
+  value of layer 4 is that the buyer is genuinely third-party — `tests/e2e/settlement.test.ts`
+  already builds its buyer from stock `@x402/fetch`, stock `@x402/stellar` and
+  `createEd25519Signer`, importing them directly under the narrow-waist exemption (amendment 004
+  §5), so the *client* half of the requirement is met today. What is missing is the separation:
+  one suite currently serves as both Movo's own end-to-end test and its interoperability
+  evidence, and a suite that fails cannot tell you which of the two claims it just falsified.
+
+  Writing it at M5 would have produced a second copy of the same buyer against the same server,
+  which is duplication rather than evidence. It becomes real evidence at M8, where GATE 3
+  requires a settled transaction hash **per supported network per scheme** — at that point the
+  suite has a matrix to cover that the e2e suite does not, and the separation earns its keep.
+
+  Until then this document does not claim layer 4 is satisfied. `tests/conformance/` holds one
+  file (`supported.test.ts`, the live `/supported` shape check), and that is the whole of it.

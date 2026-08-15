@@ -50,6 +50,46 @@ importers:
       vitest:
         specifier: 4.1.10
         version: 4.1.10(@types/node@24.10.1)(@vitest/coverage-v8@4.1.10)(vite@8.2.1(@types/node@24.10.1))
+      zod:
+        specifier: 3.25.76
+        version: 3.25.76
+
+  examples/agent-buyer:
+    dependencies:
+      '@movoframework/bazaar':
+        specifier: workspace:*
+        version: link:../../packages/bazaar
+      '@movoframework/client':
+        specifier: workspace:*
+        version: link:../../packages/client
+      '@movoframework/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@movoframework/example-discoverable-api':
+        specifier: workspace:*
+        version: link:../discoverable-api
+
+  examples/discoverable-api:
+    dependencies:
+      '@movoframework/bazaar':
+        specifier: workspace:*
+        version: link:../../packages/bazaar
+      '@movoframework/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@movoframework/server':
+        specifier: workspace:*
+        version: link:../../packages/server
+      express:
+        specifier: 5.2.1
+        version: 5.2.1
+      zod:
+        specifier: 3.25.76
+        version: 3.25.76
+    devDependencies:
+      '@types/express':
+        specifier: 5.0.0
+        version: 5.0.0
 
   examples/weather-api:
     dependencies:
@@ -70,11 +110,26 @@ importers:
         specifier: 3.25.76
         version: 3.25.76
 
-  packages/bazaar: {}
+  packages/bazaar:
+    dependencies:
+      '@movoframework/core':
+        specifier: workspace:*
+        version: link:../core
+    devDependencies:
+      zod:
+        specifier: 3.25.76
+        version: 3.25.76
 
   packages/cli: {}
 
-  packages/client: {}
+  packages/client:
+    dependencies:
+      '@movoframework/bazaar':
+        specifier: workspace:*
+        version: link:../bazaar
+      '@movoframework/core':
+        specifier: workspace:*
+        version: link:../core
 
   packages/core:
     dependencies:
@@ -84,6 +139,12 @@ importers:
       '@x402/express':
         specifier: 2.21.0
         version: 2.21.0(express@5.2.1)(typescript@7.0.2)
+      '@x402/extensions':
+        specifier: 2.21.0
+        version: 2.21.0(typescript@7.0.2)
+      '@x402/fetch':
+        specifier: 2.21.0
+        version: 2.21.0
       '@x402/stellar':
         specifier: 2.21.0
         version: 2.21.0
@@ -99,6 +160,9 @@ importers:
 
   packages/server:
     dependencies:
+      '@movoframework/bazaar':
+        specifier: workspace:*
+        version: link:../bazaar
       '@movoframework/core':
         specifier: workspace:*
         version: link:../core

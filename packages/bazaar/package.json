@@ -20,5 +20,11 @@
   "publishConfig": {
     "access": "public",
     "provenance": true
+  },
+  "dependencies": {
+    "@movoframework/core": "workspace:*"
+  },
+  "devDependencies": {
+    "zod": "3.25.76"
   }
 }

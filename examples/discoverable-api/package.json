@@ -1,0 +1,27 @@
+{
+  "name": "@movoframework/example-discoverable-api",
+  "version": "0.0.0",
+  "private": true,
+  "description": "A paid API that declares Bazaar discovery metadata derived from its resource",
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "start": "node --experimental-strip-types src/server.ts"
+  },
+  "dependencies": {
+    "@movoframework/bazaar": "workspace:*",
+    "@movoframework/core": "workspace:*",
+    "@movoframework/server": "workspace:*",
+    "express": "5.2.1",
+    "zod": "3.25.76"
+  },
+  "devDependencies": {
+    "@types/express": "5.0.0"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/app.d.ts",
+      "default": "./dist/app.js"
+    }
+  }
+}

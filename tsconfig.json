@@ -27,6 +27,12 @@
     },
     {
       "path": "examples/weather-api"
+    },
+    {
+      "path": "examples/discoverable-api"
+    },
+    {
+      "path": "examples/agent-buyer"
     }
   ]
 }

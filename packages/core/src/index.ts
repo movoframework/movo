@@ -151,6 +151,7 @@ export type {
   Network,
   PaymentOption,
   PaymentPayload,
+  PaymentPolicy,
   PaymentRequired,
   PaymentRequirements,
   Price,

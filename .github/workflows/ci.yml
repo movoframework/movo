@@ -49,6 +49,14 @@ jobs:
       - name: Protocol purity
         run: pnpm check:protocol-purity
 
+      - name: Upstream validators (AC4.8)
+        run: pnpm check:upstream-validators
+
+      # Before the typecheck, because a missing project reference makes `tsc --build` fail with
+      # an unresolved-module error that reads as a broken import rather than a build-order bug.
+      - name: Project references
+        run: pnpm check:project-references
+
       - name: Typecheck
         run: pnpm typecheck
 

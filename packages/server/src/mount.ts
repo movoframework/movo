@@ -25,6 +25,7 @@
  * docs/SPIKE_REPORT.md Q3, ADR-0008).
  */
 
+import { deriveDiscovery, validateDiscoveryStrict } from "@movoframework/bazaar";
 import {
   type CompiledApp,
   type ConfigLayers,
@@ -33,12 +34,15 @@ import {
   decodePaymentSignatureHeader,
   type Finding,
   type MovoApp,
+  MovoError,
   type MovoHooks,
   type MovoRequestContext,
   newCorrelationId,
   PAYMENT_HEADERS,
   type PaymentPayload,
+  type RouteConfig,
 } from "@movoframework/core";
+import { bazaarResourceServerExtension, checkIfBazaarNeeded } from "@movoframework/core/bazaar";
 import {
   ExactStellarScheme,
   paymentMiddlewareFromHTTPServer,
@@ -61,8 +65,15 @@ export interface MountOptions {
   readonly config?: ConfigLayers;
   /** Observer hooks. Cannot abort or recover; use `MountResult.server` for that. */
   readonly hooks?: MovoHooks;
-  /** Receives every static finding produced by compilation. */
+  /** Receives every static finding produced by compilation and by discovery derivation. */
   readonly onFinding?: (finding: Finding) => void;
+  /**
+   * Fail the mount when discovery validation produces an error-level finding.
+   *
+   * Off by default, because a soft-dropped icon should not stop a server booting. On for a
+   * deploy gate, where shipping a listing that will silently lose fields is the worse outcome.
+   */
+  readonly strictDiscovery?: boolean;
 }
 
 /** What a mount returns. */
@@ -114,12 +125,25 @@ interface ResponseLike {
  * @param options - Mount options
  * @returns The compiled app and both upstream server objects
  */
-function assemble(app: MovoApp, options?: MountOptions): MountResult {
+async function assemble(app: MovoApp, options?: MountOptions): Promise<MountResult> {
   const compiled = compileApp(app, options?.config);
 
   const dispatcher = createHookDispatcher(options?.hooks);
   dispatcher.compiled(compiled);
-  for (const finding of compiled.diagnostics) {
+
+  // ─── Bazaar derivation, before anything reads the routes ────────────────────────────────
+  //
+  // `compileApp` deliberately leaves `extensions.bazaar` off: it is pure and synchronous, and
+  // derivation may reach an optional schema converter by dynamic import. So the declaration is
+  // derived here, attached to the compiled routes, and only then handed to upstream.
+  //
+  // Order matters. `checkIfBazaarNeeded` answers "does any route carry a bazaar declaration?",
+  // which is only true *after* derivation has run. Asking before would always answer no, and
+  // the extension would never be registered — a route advertising discovery that upstream never
+  // enriches, failing silently in exactly the way M4 exists to prevent.
+  const discoveryFindings = await attachDiscovery(compiled, options);
+
+  for (const finding of [...compiled.diagnostics, ...discoveryFindings]) {
     options?.onFinding?.(finding);
     dispatcher.finding(finding);
   }
@@ -135,9 +159,74 @@ function assemble(app: MovoApp, options?: MountOptions): MountResult {
     new ExactStellarScheme(),
   );
 
+  // Upstream owns the decision and the enrichment. Movo asks its question and installs its
+  // extension; it does not re-derive "is discovery in use" from its own compiled state.
+  if (checkIfBazaarNeeded(compiled.routes)) {
+    server.registerExtension(bazaarResourceServerExtension);
+  }
+
   const httpServer = new x402HTTPResourceServer(server, compiled.routes);
 
   return { compiled, server, httpServer };
+}
+
+/**
+ * Derive each declared Bazaar extension and attach it to the compiled route.
+ *
+ * Mutating `compiled.routes` is deliberate and confined to this one place. `CompiledApp` is
+ * produced by a pure function and is otherwise treated as immutable, but the alternative —
+ * rebuilding the whole structure to add one field per route — would fork the object that
+ * `MountResult.compiled` promises is the compiled app, leaving callers holding a copy without
+ * the extensions the server is actually serving.
+ *
+ * @param compiled - The compiled application, whose routes gain `extensions.bazaar`
+ * @param options - Mount options, for strict-validation policy
+ * @returns Findings raised during derivation and escalation
+ */
+async function attachDiscovery(
+  compiled: CompiledApp,
+  options?: MountOptions,
+): Promise<readonly Finding[]> {
+  if (compiled.discoveryDeclared.length === 0) return [];
+
+  const routes = compiled.routes as Record<
+    string,
+    RouteConfig & { extensions?: Record<string, unknown> }
+  >;
+  const findings: Finding[] = [];
+
+  for (const routeKey of compiled.discoveryDeclared) {
+    const route = routes[routeKey];
+    const handler = compiled.handlers.get(routeKey);
+    if (route === undefined || handler === undefined) continue;
+
+    const derived = await deriveDiscovery(handler.resource, compiled.resolvedConfig, routeKey);
+    findings.push(...derived.findings);
+
+    if (derived.extension !== undefined) {
+      route.extensions = { ...route.extensions, ...derived.extension };
+    }
+  }
+
+  // Escalation runs after attachment, so it validates what will actually go on the wire rather
+  // than what was intended. Reported as findings by default; `strictDiscovery` makes them fatal
+  // for callers who want a misdeclared listing to fail a deploy rather than ship quietly.
+  const escalated = validateDiscoveryStrict(compiled);
+  findings.push(...escalated);
+
+  if (options?.strictDiscovery === true && escalated.some((finding) => finding.level === "error")) {
+    const summary = escalated
+      .filter((finding) => finding.level === "error")
+      .map((finding) => `  - ${finding.title}`)
+      .join("\n");
+    throw new MovoError(
+      "MOVO_E_DISCOVERY_EXTENSION_INVALID",
+      `Discovery validation failed for ${String(escalated.length)} field(s), and strictDiscovery is enabled:\n${summary}`,
+      { context: { findings: escalated.length } },
+    );
+  }
+
+  return findings;
 }
 
 /**
@@ -212,7 +301,7 @@ export async function mountExpress(
   app: MovoApp,
   options?: MountOptions,
 ): Promise<MountResult> {
-  const result = assemble(app, options);
+  const result = await assemble(app, options);
 
   express.use(paymentMiddlewareFromHTTPServer(result.httpServer));
 

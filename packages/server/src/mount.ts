@@ -25,7 +25,7 @@
  * docs/SPIKE_REPORT.md Q3, ADR-0008).
  */
 
-import { deriveDiscovery, validateDiscoveryStrict } from "@movoframework/bazaar";
+import { attachDiscovery } from "@movoframework/bazaar";
 import {
   type CompiledApp,
   type ConfigLayers,
@@ -40,7 +40,6 @@ import {
   newCorrelationId,
   PAYMENT_HEADERS,
   type PaymentPayload,
-  type RouteConfig,
 } from "@movoframework/core";
 import { bazaarResourceServerExtension, checkIfBazaarNeeded } from "@movoframework/core/bazaar";
 import {
@@ -141,7 +140,7 @@ async function assemble(app: MovoApp, options?: MountOptions): Promise<MountResu
   // which is only true *after* derivation has run. Asking before would always answer no, and
   // the extension would never be registered — a route advertising discovery that upstream never
   // enriches, failing silently in exactly the way M4 exists to prevent.
-  const discoveryFindings = await attachDiscovery(compiled, options);
+  const discoveryFindings = await attachAndEnforce(compiled, options);
 
   for (const finding of [...compiled.diagnostics, ...discoveryFindings]) {
     options?.onFinding?.(finding);
@@ -183,46 +182,23 @@ async function assemble(app: MovoApp, options?: MountOptions): Promise<MountResu
  * @param options - Mount options, for strict-validation policy
  * @returns Findings raised during derivation and escalation
  */
-async function attachDiscovery(
+async function attachAndEnforce(
   compiled: CompiledApp,
   options?: MountOptions,
 ): Promise<readonly Finding[]> {
-  if (compiled.discoveryDeclared.length === 0) return [];
+  // The derive-attach-escalate sequence is `@movoframework/bazaar`'s, shared with `movo doctor`
+  // and `movo bazaar validate`. Only the *policy* below is the mount's own: whether a
+  // misdeclared listing should stop a server booting is a deployment decision, not a fact about
+  // the metadata, so it does not belong in the library (spec §5.6).
+  const findings = await attachDiscovery(compiled);
+  const errors = findings.filter((finding) => finding.level === "error");
 
-  const routes = compiled.routes as Record<
-    string,
-    RouteConfig & { extensions?: Record<string, unknown> }
-  >;
-  const findings: Finding[] = [];
-
-  for (const routeKey of compiled.discoveryDeclared) {
-    const route = routes[routeKey];
-    const handler = compiled.handlers.get(routeKey);
-    if (route === undefined || handler === undefined) continue;
-
-    const derived = await deriveDiscovery(handler.resource, compiled.resolvedConfig, routeKey);
-    findings.push(...derived.findings);
-
-    if (derived.extension !== undefined) {
-      route.extensions = { ...route.extensions, ...derived.extension };
-    }
-  }
-
-  // Escalation runs after attachment, so it validates what will actually go on the wire rather
-  // than what was intended. Reported as findings by default; `strictDiscovery` makes them fatal
-  // for callers who want a misdeclared listing to fail a deploy rather than ship quietly.
-  const escalated = validateDiscoveryStrict(compiled);
-  findings.push(...escalated);
-
-  if (options?.strictDiscovery === true && escalated.some((finding) => finding.level === "error")) {
-    const summary = escalated
-      .filter((finding) => finding.level === "error")
-      .map((finding) => `  - ${finding.title}`)
-      .join("\n");
+  if (options?.strictDiscovery === true && errors.length > 0) {
+    const summary = errors.map((finding) => `  - ${finding.title}`).join("\n");
     throw new MovoError(
       "MOVO_E_DISCOVERY_EXTENSION_INVALID",
-      `Discovery validation failed for ${String(escalated.length)} field(s), and strictDiscovery is enabled:\n${summary}`,
-      { context: { findings: escalated.length } },
+      `Discovery validation failed for ${String(errors.length)} field(s), and strictDiscovery is enabled:\n${summary}`,
+      { context: { findings: errors.length } },
     );
   }
 

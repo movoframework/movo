@@ -10,8 +10,9 @@
 6. `docs/context/SPEC_AMENDMENT_005.md`
 7. `docs/context/SPEC_AMENDMENT_006.md`
 8. `docs/context/SPEC_AMENDMENT_007.md`
-9. `docs/SPIKE_REPORT.md` — empirical findings from M0; binding
-10. `docs/CONFORMANCE.md` — Gate 1 evidence; binding
+9. `docs/context/SPEC_AMENDMENT_008.md`
+10. `docs/SPIKE_REPORT.md` — empirical findings from M0; binding
+11. `docs/CONFORMANCE.md` — Gate 1 evidence; binding
 
 ## Rules
 

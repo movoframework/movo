@@ -1,0 +1,29 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`AC5.5 — the dev banner prints resources and provenance > is a stable snapshot, so a verbosity regression shows up in review 1`] = `
+"
+movo dev  <root>
+
+Resolved configuration
+  env                         testnet                                                   from config
+  network                     stellar:testnet                                           from config
+  payTo                       GCQQ4LGCXPRVCAWY3IK7RUUXYVFVQQ2NAMBUNBUFDG5WLPKPMK4AMQ4E  from config
+  facilitator.url             https://www.x402.org/facilitator                          from default
+  facilitator.authHeaders     not set                                                   from default
+  facilitator.timeoutMs       10000                                                     from default
+  defaults.price              not set                                                   from default
+  defaults.maxTimeoutSeconds  60                                                        from default
+  discovery.enabled           true                                                      from config
+  discovery.serviceName       Example Weather                                           from config
+  discovery.tags              weather                                                   from config
+  discovery.iconUrl           https://example.com/icon.png                              from config
+  stellar.rpcUrl              not set                                                   from default
+
+Facilitator  mock
+
+Paid resources  2
+  GET /weather/:city     $0.001  stellar:testnet  →  GCQQ4LGCXPRVCAWY3IK7RUUXYVFVQQ2NAMBUNBUFDG5WLPKPMK4AMQ4E
+  GET /internal/metrics  $0.01   stellar:testnet  →  GCQQ4LGCXPRVCAWY3IK7RUUXYVFVQQ2NAMBUNBUFDG5WLPKPMK4AMQ4E
+
+"
+`;

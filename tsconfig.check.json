@@ -15,6 +15,7 @@
     "tests/integration/**/*.ts",
     "tests/conformance/**/*.ts",
     "packages/*/src/**/*.test.ts",
+    "packages/create-movo-app/templates/*/**/*.ts",
     "vitest.config.ts"
   ]
 }

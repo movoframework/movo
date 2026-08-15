@@ -1,0 +1,33 @@
+{
+  "name": "@movoframework/template-discoverable",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Movo template with Bazaar discovery metadata and a buyer client",
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "dev": "movo dev",
+    "doctor": "movo doctor",
+    "validate": "movo bazaar validate",
+    "buyer": "node src/buyer.ts",
+    "test": "vitest run",
+    "start": "node src/server.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@movoframework/bazaar": "workspace:*",
+    "@movoframework/cli": "workspace:*",
+    "@movoframework/client": "workspace:*",
+    "@movoframework/core": "workspace:*",
+    "@movoframework/server": "workspace:*",
+    "express": "5.2.1",
+    "zod": "3.25.76"
+  },
+  "devDependencies": {
+    "@movoframework/testing": "workspace:*",
+    "@types/express": "5.0.0",
+    "@types/node": "24.10.1",
+    "typescript": "7.0.2",
+    "vitest": "4.1.10"
+  }
+}

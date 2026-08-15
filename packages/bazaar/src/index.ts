@@ -22,6 +22,7 @@
  * waist. Nothing here imports `@x402/*` directly (ADR-0004, amendment 007 §4).
  */
 
+export { attachDiscovery } from "./attach.js";
 export {
   type DerivedDiscovery,
   type DiscoveryOverrides,

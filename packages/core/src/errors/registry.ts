@@ -80,7 +80,10 @@ export type MovoErrorCode =
   | "MOVO_E_BUDGET_NETWORK_NOT_ALLOWED"
   | "MOVO_W_PARAM_UNDESCRIBED"
   | "MOVO_W_DISCOVERY_SCHEMA_UNDERIVED"
-  | "MOVO_W_RESPONSE_NOT_STREAMED";
+  | "MOVO_W_RESPONSE_NOT_STREAMED"
+  | "MOVO_W_NODE_VERSION_UNSUPPORTED"
+  | "MOVO_W_X402_PIN_DRIFT"
+  | "MOVO_E_FACILITATOR_PUBNET_REFUSED";
 
 /** The registry itself. */
 export const MOVO_ERROR_REGISTRY: { readonly [K in MovoErrorCode]: ErrorRegistryEntry } = {
@@ -272,6 +275,30 @@ export const MOVO_ERROR_REGISTRY: { readonly [K in MovoErrorCode]: ErrorRegistry
     severity: "warning",
     meaning: "A paid route cannot stream its response.",
     fix: "Return a complete body rather than streaming. The upstream middleware buffers the entire response until settlement resolves, so chunked and SSE responses behind a paid route do not reach the buyer incrementally. See docs/concepts/payment-lifecycle.md.",
+  },
+  MOVO_E_FACILITATOR_PUBNET_REFUSED: {
+    code: "MOVO_E_FACILITATOR_PUBNET_REFUSED",
+    severity: "error",
+    // Distinct from MOVO_E_PUBNET_NOT_ENABLED on purpose. That code means "you have not
+    // confirmed you intend mainnet", and its fix is to set MOVO_ALLOW_PUBNET=1. This one fires
+    // *after* that confirmation, and setting the variable again does nothing — reusing the code
+    // here would hand the reader a remedy they have already applied, which is worse than no
+    // remedy at all.
+    meaning:
+      "The in-process development facilitator was asked to run against stellar:pubnet, which it refuses regardless of MOVO_ALLOW_PUBNET.",
+    fix: "Run `movo dev` against a real facilitator instead — omit --facilitator, or pass --facilitator config. The in-process facilitator signs and submits real transactions itself, so on mainnet it would move real funds from a development command; MOVO_ALLOW_PUBNET does not unlock it, because no development scenario wants it.",
+  },
+  MOVO_W_NODE_VERSION_UNSUPPORTED: {
+    code: "MOVO_W_NODE_VERSION_UNSUPPORTED",
+    severity: "warning",
+    meaning: "The running Node.js version is below the minimum Movo is tested against.",
+    fix: "Upgrade to Node 22 or later. Movo's CI matrix covers 22, 24 and 26; older releases are untested and Node's native TypeScript stripping — which the scaffolded project relies on to run src/server.ts directly — is unavailable before 22.",
+  },
+  MOVO_W_X402_PIN_DRIFT: {
+    code: "MOVO_W_X402_PIN_DRIFT",
+    severity: "warning",
+    meaning: "An installed @x402/* version differs from the one recorded in docs/COMPATIBILITY.md.",
+    fix: "Either regenerate the matrix with `pnpm generate:compat` after deliberately bumping the pin, or reinstall to match it. @x402/* versions are exact-pinned (spec §1.13) because upstream ships roughly weekly with `~`-tight cross-package pins: a drifted install is running against a protocol surface no conformance run has covered.",
   },
 };
 

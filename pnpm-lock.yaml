@@ -14,6 +14,27 @@ importers:
       '@changesets/cli':
         specifier: 2.31.1
         version: 2.31.1(@types/node@24.10.1)
+      '@movoframework/bazaar':
+        specifier: workspace:*
+        version: link:packages/bazaar
+      '@movoframework/cli':
+        specifier: workspace:*
+        version: link:packages/cli
+      '@movoframework/client':
+        specifier: workspace:*
+        version: link:packages/client
+      '@movoframework/core':
+        specifier: workspace:*
+        version: link:packages/core
+      '@movoframework/server':
+        specifier: workspace:*
+        version: link:packages/server
+      '@movoframework/stellar':
+        specifier: workspace:*
+        version: link:packages/stellar
+      '@movoframework/testing':
+        specifier: workspace:*
+        version: link:packages/testing
       '@stellar/stellar-sdk':
         specifier: 16.2.0
         version: 16.2.0
@@ -120,7 +141,30 @@ importers:
         specifier: 3.25.76
         version: 3.25.76
 
-  packages/cli: {}
+  packages/cli:
+    dependencies:
+      '@movoframework/bazaar':
+        specifier: workspace:*
+        version: link:../bazaar
+      '@movoframework/core':
+        specifier: workspace:*
+        version: link:../core
+      '@movoframework/server':
+        specifier: workspace:*
+        version: link:../server
+      '@movoframework/stellar':
+        specifier: workspace:*
+        version: link:../stellar
+      '@movoframework/testing':
+        specifier: workspace:*
+        version: link:../testing
+    devDependencies:
+      express:
+        specifier: 5.2.1
+        version: 5.2.1
+      vitest:
+        specifier: 4.1.10
+        version: 4.1.10(@types/node@24.10.1)(@vitest/coverage-v8@4.1.10)(vite@8.2.1(@types/node@24.10.1))
 
   packages/client:
     dependencies:
@@ -157,6 +201,77 @@ importers:
         version: 3.25.76
 
   packages/create-movo-app: {}
+
+  packages/create-movo-app/templates/discoverable:
+    dependencies:
+      '@movoframework/bazaar':
+        specifier: workspace:*
+        version: link:../../../bazaar
+      '@movoframework/cli':
+        specifier: workspace:*
+        version: link:../../../cli
+      '@movoframework/client':
+        specifier: workspace:*
+        version: link:../../../client
+      '@movoframework/core':
+        specifier: workspace:*
+        version: link:../../../core
+      '@movoframework/server':
+        specifier: workspace:*
+        version: link:../../../server
+      express:
+        specifier: 5.2.1
+        version: 5.2.1
+      zod:
+        specifier: 3.25.76
+        version: 3.25.76
+    devDependencies:
+      '@movoframework/testing':
+        specifier: workspace:*
+        version: link:../../../testing
+      '@types/express':
+        specifier: 5.0.0
+        version: 5.0.0
+      '@types/node':
+        specifier: 24.10.1
+        version: 24.10.1
+      typescript:
+        specifier: 7.0.2
+        version: 7.0.2
+      vitest:
+        specifier: 4.1.10
+        version: 4.1.10(@types/node@24.10.1)(@vitest/coverage-v8@4.1.10)(vite@8.2.1(@types/node@24.10.1))
+
+  packages/create-movo-app/templates/minimal:
+    dependencies:
+      '@movoframework/cli':
+        specifier: workspace:*
+        version: link:../../../cli
+      '@movoframework/core':
+        specifier: workspace:*
+        version: link:../../../core
+      '@movoframework/server':
+        specifier: workspace:*
+        version: link:../../../server
+      express:
+        specifier: 5.2.1
+        version: 5.2.1
+    devDependencies:
+      '@movoframework/testing':
+        specifier: workspace:*
+        version: link:../../../testing
+      '@types/express':
+        specifier: 5.0.0
+        version: 5.0.0
+      '@types/node':
+        specifier: 24.10.1
+        version: 24.10.1
+      typescript:
+        specifier: 7.0.2
+        version: 7.0.2
+      vitest:
+        specifier: 4.1.10
+        version: 4.1.10(@types/node@24.10.1)(@vitest/coverage-v8@4.1.10)(vite@8.2.1(@types/node@24.10.1))
 
   packages/server:
     dependencies:

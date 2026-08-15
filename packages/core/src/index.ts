@@ -85,6 +85,14 @@ export {
 
 // ─── Errors and diagnostics ──────────────────────────────────────────────────────────────
 
+export {
+  checkNodeVersion,
+  checkPinDrift,
+  ENVIRONMENT_CHECK_IDS,
+  MINIMUM_NODE_MAJOR,
+  nodeMajorOf,
+  type PinComparison,
+} from "./checks/environment.js";
 export { type Finding, type FindingLevel, findingFromCode } from "./diagnostics.js";
 export {
   isMovoError,

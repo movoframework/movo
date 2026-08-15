@@ -10,7 +10,6 @@
   "references": [
     { "path": "../../packages/core" },
     { "path": "../../packages/server" },
-    { "path": "../../packages/bazaar" },
-    { "path": "../../packages/client" }
+    { "path": "../../packages/bazaar" }
   ]
 }

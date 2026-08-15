@@ -12,9 +12,6 @@
       "path": "../../packages/core"
     },
     {
-      "path": "../../packages/server"
-    },
-    {
       "path": "../../packages/bazaar"
     },
     {

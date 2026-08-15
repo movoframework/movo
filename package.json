@@ -28,7 +28,8 @@
     "generate:errors": "node scripts/generate-error-docs.ts",
     "check:protocol-purity": "node scripts/check-protocol-purity.ts",
     "check:key-generation": "node scripts/check-key-generation.ts",
-    "check:upstream-validators": "node scripts/check-upstream-validators.ts"
+    "check:upstream-validators": "node scripts/check-upstream-validators.ts",
+    "check:project-references": "node scripts/check-project-references.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.7",

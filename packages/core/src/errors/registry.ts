@@ -83,7 +83,9 @@ export type MovoErrorCode =
   | "MOVO_W_RESPONSE_NOT_STREAMED"
   | "MOVO_W_NODE_VERSION_UNSUPPORTED"
   | "MOVO_W_X402_PIN_DRIFT"
-  | "MOVO_E_FACILITATOR_PUBNET_REFUSED";
+  | "MOVO_E_FACILITATOR_PUBNET_REFUSED"
+  | "MOVO_E_FACILITATOR_CONFIG_INVALID"
+  | "MOVO_E_FACILITATOR_SIGNER_UNAVAILABLE";
 
 /** The registry itself. */
 export const MOVO_ERROR_REGISTRY: { readonly [K in MovoErrorCode]: ErrorRegistryEntry } = {
@@ -299,6 +301,24 @@ export const MOVO_ERROR_REGISTRY: { readonly [K in MovoErrorCode]: ErrorRegistry
     severity: "warning",
     meaning: "An installed @x402/* version differs from the one recorded in docs/COMPATIBILITY.md.",
     fix: "Either regenerate the matrix with `pnpm generate:compat` after deliberately bumping the pin, or reinstall to match it. @x402/* versions are exact-pinned (spec §1.13) because upstream ships roughly weekly with `~`-tight cross-package pins: a drifted install is running against a protocol surface no conformance run has covered.",
+  },
+  // ─── SCF track: the facilitator service (M6) ───────────────────────────────────────────
+  //
+  // These live in the one MOVO_E_* registry rather than a MOVO_FAC_E_* namespace of their own,
+  // for the reason spec v2 §A.1 gives for refusing a BAZAAR_E_* namespace: a second registry
+  // means a second docs generator, a second lookup table, and a code whose prefix tells the
+  // reader which package threw rather than what went wrong.
+  MOVO_E_FACILITATOR_CONFIG_INVALID: {
+    code: "MOVO_E_FACILITATOR_CONFIG_INVALID",
+    severity: "error",
+    meaning: "The facilitator service configuration cannot be served as written.",
+    fix: "Read the message: it names the specific field. The usual causes are an empty MOVO_FACILITATOR_<NET>_SIGNER_SEEDS (a facilitator with no sponsor can verify but never settle), stellar:pubnet configured without an explicit Soroban RPC URL (there is no public mainnet default), or bearer auth enabled with no keys, which would reject every request. See docs/operating-a-facilitator/deployment.md.",
+  },
+  MOVO_E_FACILITATOR_SIGNER_UNAVAILABLE: {
+    code: "MOVO_E_FACILITATOR_SIGNER_UNAVAILABLE",
+    severity: "error",
+    meaning: "No sponsoring signer was available to settle a payment.",
+    fix: "Check /ready. Either every signer in the pool is below its XLM floor — top them up, see docs/operating-a-facilitator/runbook.md — or the requested network has no pool configured at all, which is a configuration error rather than an operational one.",
   },
 };
 

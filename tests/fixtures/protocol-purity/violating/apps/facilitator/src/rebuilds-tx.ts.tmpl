@@ -1,0 +1,5 @@
+// VIOLATION FIXTURE (AC6.10): the HTTP service rebuilding a transaction. Transaction rebuild
+// belongs to ExactStellarScheme.settle(); a transport doing it has become a payment engine.
+import { TransactionBuilder } from "@stellar/stellar-sdk";
+
+export const bad = TransactionBuilder;

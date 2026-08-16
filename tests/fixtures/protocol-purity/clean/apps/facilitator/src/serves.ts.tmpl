@@ -1,0 +1,4 @@
+// CLEAN FIXTURE: a transport that moves bytes and makes no protocol decision.
+export function route(path: string): string {
+  return path === "/verify" ? "verify" : "supported";
+}

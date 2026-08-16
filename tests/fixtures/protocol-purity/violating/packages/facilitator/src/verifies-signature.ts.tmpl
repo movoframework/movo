@@ -1,0 +1,8 @@
+// VIOLATION FIXTURE (AC6.10): the facilitator library reaching for the signing primitive.
+// This is the exact shape the M6 prompt warns about — "if you find yourself writing XDR
+// parsing or signature checks, you are in the wrong layer". @x402/stellar owns this.
+import { Keypair } from "@stellar/stellar-sdk";
+
+export function badlySign(seed: string, payload: Buffer): Buffer {
+  return Keypair.fromSecret(seed).sign(payload);
+}

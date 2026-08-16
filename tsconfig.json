@@ -23,6 +23,9 @@
       "path": "packages/cli"
     },
     {
+      "path": "packages/facilitator"
+    },
+    {
       "path": "packages/create-movo-app"
     },
     {
@@ -33,6 +36,9 @@
     },
     {
       "path": "examples/agent-buyer"
+    },
+    {
+      "path": "apps/facilitator"
     }
   ]
 }

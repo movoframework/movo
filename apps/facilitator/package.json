@@ -1,0 +1,21 @@
+{
+  "name": "@movoframework/facilitator-service",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Deployable Hono service exposing the Movo Stellar x402 facilitator",
+  "license": "Apache-2.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node dist/server.js",
+    "dev": "node --watch src/server.ts"
+  },
+  "dependencies": {
+    "@hono/node-server": "2.1.1",
+    "@movoframework/core": "workspace:*",
+    "@movoframework/facilitator": "workspace:*",
+    "hono": "4.13.2"
+  }
+}

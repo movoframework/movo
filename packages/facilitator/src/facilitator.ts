@@ -82,6 +82,65 @@ export interface FacilitatorResponse<T> {
 }
 
 /**
+ * A hook invoked after a settlement completes, so a catalog can ingest it.
+ *
+ * Typed as a port rather than as a dependency on `@movoframework/catalog`, for the same reason
+ * `MountOptions.facilitator` takes a `FacilitatorClient` instead of importing the testing
+ * package: a facilitator that must load a catalog — and therefore a store driver, and an
+ * embedding model — in order to settle a payment has taken on the discovery track's
+ * dependencies to do the core track's job. `apps/facilitator` wires the two together.
+ *
+ * **It cannot change the settlement.** It receives the completed result and returns only what
+ * to report in `EXTENSION-RESPONSES`. Cataloguing is a side effect of a payment, never a
+ * condition of one: a catalog outage must not stop money moving, so a throwing observer is
+ * swallowed and the settlement stands.
+ */
+export type SettlementObserver = (event: {
+  readonly paymentPayload: PaymentPayload;
+  readonly paymentRequirements: PaymentRequirements;
+  readonly settleResponse: SettleResponse;
+}) => Promise<ExtensionResponse | undefined>;
+
+/**
+ * What an observer reports back, in the `EXTENSION-RESPONSES` vocabulary.
+ *
+ * The wire format was read from `@x402/core`'s `logExtensionResponsesHeader`: the header is
+ * base64 JSON keyed by extension key, carrying `status` and `rejectedReason` among the fields
+ * it surfaces. Upstream ships a *reader* for it and no writer, which is why this service
+ * encodes it by hand — the same gap `readCatalogOutcome` documents from the client side, seen
+ * from the other end, and a candidate upstream contribution.
+ */
+export interface ExtensionResponse {
+  readonly key: string;
+  readonly status: "success" | "processing" | "rejected";
+  readonly rejectedReason?: string;
+}
+
+/**
+ * Encode an `EXTENSION-RESPONSES` header value.
+ *
+ * @param responses - One entry per extension that reported
+ * @returns The base64 header value, or undefined when nothing reported
+ */
+export function encodeExtensionResponses(
+  responses: readonly ExtensionResponse[],
+): string | undefined {
+  if (responses.length === 0) return undefined;
+  const body: { [key: string]: { status: string; rejectedReason?: string } } = {};
+  for (const response of responses) {
+    body[response.key] = {
+      status: response.status,
+      // AC7.6: a rejection ALWAYS carries a populated reason. A `rejected` with no reason is
+      // the shape that teaches an integrator to stop reading the header.
+      ...(response.status === "rejected"
+        ? { rejectedReason: response.rejectedReason ?? "unspecified" }
+        : {}),
+    };
+  }
+  return Buffer.from(JSON.stringify(body), "utf8").toString("base64");
+}
+
+/**
  * The read-only view of a signer pool that operational surfaces are given.
  *
  * `/metrics`, a runbook script and a test all want to *see* the pool. None of them should be
@@ -157,7 +216,10 @@ interface Lease {
  * @param config - A resolved service configuration
  * @returns The service handlers, readiness, metering and in-process client
  */
-export function createFacilitator(config: FacilitatorConfig): MovoFacilitator {
+export function createFacilitator(
+  config: FacilitatorConfig,
+  observers: readonly SettlementObserver[] = [],
+): MovoFacilitator {
   const leases = new AsyncLocalStorage<Lease>();
   const runtimes = new Map<Network, NetworkRuntime>();
   const engine = new x402Facilitator();
@@ -418,11 +480,36 @@ export function createFacilitator(config: FacilitatorConfig): MovoFacilitator {
 
       const body = await runSettle(decoded.payload, decoded.requirements, decoded.network);
       metering.record(guarded.caller, "settle", body.success);
+
+      // Observers run after the settlement is final and cannot alter it. Each is isolated:
+      // a catalog that throws must not turn a completed payment into an error response, so a
+      // failure here is dropped rather than propagated. The buyer's money moved either way.
+      const extensionResponses: ExtensionResponse[] = [];
+      for (const observe of observers) {
+        try {
+          const reported = await observe({
+            paymentPayload: decoded.payload,
+            paymentRequirements: decoded.requirements,
+            settleResponse: body,
+          });
+          if (reported !== undefined) extensionResponses.push(reported);
+        } catch {
+          // Deliberately swallowed. See above.
+        }
+      }
+
+      const encoded = encodeExtensionResponses(extensionResponses);
+
       // 200 with `success: false` rather than a 4xx: a settlement that was correctly refused
       // is a completed protocol exchange, not a failed HTTP request, and the stock resource
       // server reads the reason out of the body either way. Reserving non-2xx for transport
       // failures keeps the two classes distinguishable to an operator reading access logs.
-      return { status: 200, body, headers: {}, caller: guarded.caller };
+      return {
+        status: 200,
+        body,
+        headers: encoded === undefined ? {} : { "EXTENSION-RESPONSES": encoded },
+        caller: guarded.caller,
+      };
     },
 
     supported: async (request) => {

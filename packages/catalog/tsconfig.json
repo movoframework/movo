@@ -7,15 +7,5 @@
   },
   "include": ["src/**/*.ts"],
   "exclude": ["src/**/*.test.ts"],
-  "references": [
-    {
-      "path": "../../packages/core"
-    },
-    {
-      "path": "../../packages/facilitator"
-    },
-    {
-      "path": "../../packages/catalog"
-    }
-  ]
+  "references": [{ "path": "../core" }]
 }

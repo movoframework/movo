@@ -1,0 +1,40 @@
+{
+  "name": "@movoframework/catalog",
+  "version": "0.0.0",
+  "description": "The Stellar Bazaar catalog: automatic cataloging at settle time, discovery listing and hybrid search",
+  "license": "Apache-2.0",
+  "type": "module",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=22"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "dependencies": {
+    "@movoframework/core": "workspace:*",
+    "better-sqlite3": "13.0.3"
+  },
+  "peerDependencies": {
+    "@huggingface/transformers": "^4.0.0",
+    "pg": "^8.11.0"
+  },
+  "peerDependenciesMeta": {
+    "@huggingface/transformers": {
+      "optional": true
+    },
+    "pg": {
+      "optional": true
+    }
+  }
+}

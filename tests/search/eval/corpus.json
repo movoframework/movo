@@ -1,0 +1,457 @@
+[
+  {
+    "id": "weather-current",
+    "serviceName": "SkyCast",
+    "description": "Current weather conditions for any city: temperature, humidity, wind speed and a short summary.",
+    "tags": ["weather", "forecast", "climate"],
+    "resource": "https://skycast.example/v1/current/:city",
+    "params": { "city": "IATA airport code or city name" }
+  },
+  {
+    "id": "weather-hourly",
+    "serviceName": "SkyCast Hourly",
+    "description": "Hour-by-hour forecast for the next 48 hours including precipitation probability.",
+    "tags": ["weather", "forecast", "hourly"],
+    "resource": "https://skycast.example/v1/hourly/:city",
+    "params": { "city": "IATA airport code" }
+  },
+  {
+    "id": "weather-marine",
+    "serviceName": "TideWatch",
+    "description": "Marine and coastal conditions: wave height, swell period, tide tables and sea surface temperature.",
+    "tags": ["weather", "marine", "tides"],
+    "resource": "https://tidewatch.example/v1/marine/:station",
+    "params": { "station": "NOAA station identifier" }
+  },
+  {
+    "id": "weather-historical",
+    "serviceName": "ClimateArchive",
+    "description": "Historical daily observations going back to 1950 for any weather station.",
+    "tags": ["weather", "history", "climate"],
+    "resource": "https://climatearchive.example/v1/daily/:station",
+    "params": { "station": "WMO station id", "from": "ISO date", "to": "ISO date" }
+  },
+  {
+    "id": "air-quality",
+    "serviceName": "AirIndex",
+    "description": "Real-time air quality index, particulate matter PM2.5 and PM10, ozone and pollen counts.",
+    "tags": ["air", "pollution", "health"],
+    "resource": "https://airindex.example/v1/aqi/:city",
+    "params": { "city": "city name" }
+  },
+
+  {
+    "id": "stock-quote",
+    "serviceName": "TickerLine",
+    "description": "Real-time equity quotes: last trade price, bid, ask and daily volume for listed stocks.",
+    "tags": ["finance", "stocks", "markets"],
+    "resource": "https://tickerline.example/v1/quote/:symbol",
+    "params": { "symbol": "exchange ticker symbol" }
+  },
+  {
+    "id": "stock-fundamentals",
+    "serviceName": "FundamentalsDB",
+    "description": "Company fundamentals: revenue, earnings per share, price to earnings ratio and balance sheet items.",
+    "tags": ["finance", "equities", "research"],
+    "resource": "https://fundamentalsdb.example/v1/company/:symbol",
+    "params": { "symbol": "ticker" }
+  },
+  {
+    "id": "forex-rate",
+    "serviceName": "RateBridge",
+    "description": "Foreign exchange spot rates between any two currencies, updated every second.",
+    "tags": ["finance", "forex", "currency"],
+    "resource": "https://ratebridge.example/v1/fx/:base/:quote",
+    "params": { "base": "ISO 4217 currency code", "quote": "ISO 4217 currency code" }
+  },
+  {
+    "id": "crypto-price",
+    "serviceName": "ChainTicker",
+    "description": "Spot prices for cryptocurrencies across major exchanges with volume weighted average.",
+    "tags": ["crypto", "finance", "markets"],
+    "resource": "https://chainticker.example/v1/price/:asset",
+    "params": { "asset": "asset symbol such as BTC or XLM" }
+  },
+  {
+    "id": "crypto-onchain",
+    "serviceName": "LedgerLens",
+    "description": "On-chain analytics: active addresses, transaction counts and fee statistics per blockchain.",
+    "tags": ["crypto", "analytics", "blockchain"],
+    "resource": "https://ledgerlens.example/v1/chain/:network",
+    "params": { "network": "chain identifier" }
+  },
+
+  {
+    "id": "geocode-forward",
+    "serviceName": "PlaceFinder",
+    "description": "Convert a street address or place name into latitude and longitude coordinates.",
+    "tags": ["geo", "maps", "address"],
+    "resource": "https://placefinder.example/v1/geocode",
+    "params": { "q": "free text address or place name" }
+  },
+  {
+    "id": "geocode-reverse",
+    "serviceName": "PlaceFinder Reverse",
+    "description": "Convert latitude and longitude into the nearest street address and administrative region.",
+    "tags": ["geo", "maps", "address"],
+    "resource": "https://placefinder.example/v1/reverse",
+    "params": { "lat": "latitude", "lon": "longitude" }
+  },
+  {
+    "id": "routing-directions",
+    "serviceName": "PathPlanner",
+    "description": "Turn by turn driving, cycling and walking directions between two points with travel time.",
+    "tags": ["geo", "routing", "navigation"],
+    "resource": "https://pathplanner.example/v1/route",
+    "params": {
+      "from": "origin coordinates",
+      "to": "destination coordinates",
+      "mode": "car, bike or foot"
+    }
+  },
+  {
+    "id": "timezone-lookup",
+    "serviceName": "ZoneResolver",
+    "description": "Determine the IANA time zone and current UTC offset for any coordinate pair.",
+    "tags": ["geo", "time", "timezone"],
+    "resource": "https://zoneresolver.example/v1/timezone",
+    "params": { "lat": "latitude", "lon": "longitude" }
+  },
+  {
+    "id": "elevation",
+    "serviceName": "TerrainHeight",
+    "description": "Ground elevation above sea level for a coordinate, sampled from a digital elevation model.",
+    "tags": ["geo", "terrain", "elevation"],
+    "resource": "https://terrainheight.example/v1/elevation",
+    "params": { "lat": "latitude", "lon": "longitude" }
+  },
+
+  {
+    "id": "translate-text",
+    "serviceName": "LinguaBridge",
+    "description": "Translate text between more than one hundred languages with automatic source detection.",
+    "tags": ["language", "translation", "nlp"],
+    "resource": "https://linguabridge.example/v1/translate",
+    "params": { "text": "source text", "target": "target language code" }
+  },
+  {
+    "id": "language-detect",
+    "serviceName": "LinguaBridge Detect",
+    "description": "Identify which language a passage of text is written in, with a confidence score.",
+    "tags": ["language", "detection", "nlp"],
+    "resource": "https://linguabridge.example/v1/detect",
+    "params": { "text": "input text" }
+  },
+  {
+    "id": "sentiment",
+    "serviceName": "ToneReader",
+    "description": "Sentiment analysis returning polarity and subjectivity scores for a block of text.",
+    "tags": ["nlp", "sentiment", "text"],
+    "resource": "https://tonereader.example/v1/sentiment",
+    "params": { "text": "input text" }
+  },
+  {
+    "id": "summarize",
+    "serviceName": "BriefBot",
+    "description": "Abstractive summarisation of long documents into a short paragraph or bullet points.",
+    "tags": ["nlp", "summary", "text"],
+    "resource": "https://briefbot.example/v1/summarize",
+    "params": { "text": "document body", "style": "paragraph or bullets" }
+  },
+  {
+    "id": "ocr",
+    "serviceName": "PageScan",
+    "description": "Optical character recognition extracting text and layout from scanned images and PDFs.",
+    "tags": ["ocr", "document", "vision"],
+    "resource": "https://pagescan.example/v1/ocr",
+    "params": { "imageUrl": "URL of the image or PDF" }
+  },
+
+  {
+    "id": "image-generate",
+    "serviceName": "CanvasForge",
+    "description": "Generate an image from a text prompt with selectable aspect ratio and style presets.",
+    "tags": ["image", "generation", "ai"],
+    "resource": "https://canvasforge.example/v1/generate",
+    "params": { "prompt": "text description of the desired image" }
+  },
+  {
+    "id": "image-upscale",
+    "serviceName": "PixelLift",
+    "description": "Increase image resolution up to four times while preserving detail and reducing noise.",
+    "tags": ["image", "upscale", "enhance"],
+    "resource": "https://pixellift.example/v1/upscale",
+    "params": { "imageUrl": "source image URL", "scale": "2 or 4" }
+  },
+  {
+    "id": "background-removal",
+    "serviceName": "CutOut",
+    "description": "Remove the background from a photograph and return a transparent PNG cutout.",
+    "tags": ["image", "editing", "background"],
+    "resource": "https://cutout.example/v1/remove-background",
+    "params": { "imageUrl": "source image URL" }
+  },
+  {
+    "id": "image-caption",
+    "serviceName": "AltText",
+    "description": "Generate a descriptive caption and accessibility alt text for any image.",
+    "tags": ["image", "captioning", "accessibility"],
+    "resource": "https://alttext.example/v1/caption",
+    "params": { "imageUrl": "source image URL" }
+  },
+  {
+    "id": "face-blur",
+    "serviceName": "PrivacyMask",
+    "description": "Detect faces in a photograph and blur them for privacy compliance before publication.",
+    "tags": ["image", "privacy", "vision"],
+    "resource": "https://privacymask.example/v1/blur-faces",
+    "params": { "imageUrl": "source image URL" }
+  },
+
+  {
+    "id": "speech-to-text",
+    "serviceName": "EchoScript",
+    "description": "Transcribe spoken audio to text with speaker labels and word level timestamps.",
+    "tags": ["audio", "transcription", "speech"],
+    "resource": "https://echoscript.example/v1/transcribe",
+    "params": { "audioUrl": "URL of the audio file", "diarize": "whether to label speakers" }
+  },
+  {
+    "id": "text-to-speech",
+    "serviceName": "VoiceCast",
+    "description": "Synthesise natural sounding speech audio from text in a choice of voices.",
+    "tags": ["audio", "speech", "synthesis"],
+    "resource": "https://voicecast.example/v1/speak",
+    "params": { "text": "text to read aloud", "voice": "voice identifier" }
+  },
+  {
+    "id": "music-identify",
+    "serviceName": "TuneFinder",
+    "description": "Identify a song from a short audio clip and return artist, title and album.",
+    "tags": ["audio", "music", "recognition"],
+    "resource": "https://tunefinder.example/v1/identify",
+    "params": { "audioUrl": "clip URL" }
+  },
+
+  {
+    "id": "email-validate",
+    "serviceName": "MailCheck",
+    "description": "Validate an email address: syntax, domain MX records and disposable provider detection.",
+    "tags": ["email", "validation", "identity"],
+    "resource": "https://mailcheck.example/v1/validate",
+    "params": { "email": "address to validate" }
+  },
+  {
+    "id": "phone-validate",
+    "serviceName": "DialCheck",
+    "description": "Validate and normalise a telephone number to E.164 and identify the carrier and country.",
+    "tags": ["phone", "validation", "identity"],
+    "resource": "https://dialcheck.example/v1/validate",
+    "params": { "number": "phone number in any format" }
+  },
+  {
+    "id": "iban-validate",
+    "serviceName": "BankVerify",
+    "description": "Check an IBAN or bank account number for validity and return the issuing institution.",
+    "tags": ["finance", "validation", "banking"],
+    "resource": "https://bankverify.example/v1/iban/:iban",
+    "params": { "iban": "international bank account number" }
+  },
+  {
+    "id": "vat-lookup",
+    "serviceName": "TaxIDCheck",
+    "description": "Verify a European VAT registration number and return the registered company name.",
+    "tags": ["tax", "validation", "company"],
+    "resource": "https://taxidcheck.example/v1/vat/:number",
+    "params": { "number": "VAT registration number" }
+  },
+
+  {
+    "id": "company-lookup",
+    "serviceName": "RegistryQuery",
+    "description": "Company registry search returning incorporation date, directors and registered office.",
+    "tags": ["company", "registry", "legal"],
+    "resource": "https://registryquery.example/v1/company",
+    "params": { "name": "company name", "jurisdiction": "country code" }
+  },
+  {
+    "id": "domain-whois",
+    "serviceName": "WhoisNow",
+    "description": "Domain registration details: registrar, creation and expiry dates and name servers.",
+    "tags": ["domain", "whois", "network"],
+    "resource": "https://whoisnow.example/v1/whois/:domain",
+    "params": { "domain": "fully qualified domain name" }
+  },
+  {
+    "id": "dns-lookup",
+    "serviceName": "ResolveIt",
+    "description": "Query DNS records of any type for a hostname, including A, AAAA, MX, TXT and CNAME.",
+    "tags": ["dns", "network", "domain"],
+    "resource": "https://resolveit.example/v1/dns/:hostname",
+    "params": { "hostname": "host to resolve", "type": "record type" }
+  },
+  {
+    "id": "ip-geolocation",
+    "serviceName": "NetLocate",
+    "description": "Geolocate an IP address to country, region and city with autonomous system details.",
+    "tags": ["network", "geo", "ip"],
+    "resource": "https://netlocate.example/v1/ip/:address",
+    "params": { "address": "IPv4 or IPv6 address" }
+  },
+  {
+    "id": "ssl-check",
+    "serviceName": "CertWatch",
+    "description": "Inspect a TLS certificate chain for a host: issuer, expiry date and protocol support.",
+    "tags": ["security", "tls", "network"],
+    "resource": "https://certwatch.example/v1/tls/:host",
+    "params": { "host": "hostname to inspect" }
+  },
+
+  {
+    "id": "url-screenshot",
+    "serviceName": "SnapPage",
+    "description": "Capture a full page screenshot of any web page at a chosen viewport width.",
+    "tags": ["web", "screenshot", "rendering"],
+    "resource": "https://snappage.example/v1/screenshot",
+    "params": { "url": "page to capture", "width": "viewport width in pixels" }
+  },
+  {
+    "id": "url-to-pdf",
+    "serviceName": "PrintPress",
+    "description": "Render a web page to a paginated PDF document with headers and footers.",
+    "tags": ["web", "pdf", "rendering"],
+    "resource": "https://printpress.example/v1/pdf",
+    "params": { "url": "page to render" }
+  },
+  {
+    "id": "html-extract",
+    "serviceName": "ReaderMode",
+    "description": "Extract the main article text from a cluttered web page, stripping navigation and adverts.",
+    "tags": ["web", "scraping", "text"],
+    "resource": "https://readermode.example/v1/extract",
+    "params": { "url": "article URL" }
+  },
+  {
+    "id": "rss-parse",
+    "serviceName": "FeedReader",
+    "description": "Parse an RSS or Atom feed into structured JSON entries with publication dates.",
+    "tags": ["web", "rss", "feed"],
+    "resource": "https://feedreader.example/v1/feed",
+    "params": { "url": "feed URL" }
+  },
+
+  {
+    "id": "pdf-merge",
+    "serviceName": "DocStitch",
+    "description": "Merge several PDF documents into a single file preserving bookmarks.",
+    "tags": ["document", "pdf", "tools"],
+    "resource": "https://docstitch.example/v1/merge",
+    "params": { "urls": "list of PDF URLs" }
+  },
+  {
+    "id": "pdf-extract-tables",
+    "serviceName": "TableHarvest",
+    "description": "Detect and extract tabular data from PDF reports into CSV or JSON rows.",
+    "tags": ["document", "pdf", "tables"],
+    "resource": "https://tableharvest.example/v1/tables",
+    "params": { "url": "PDF URL", "pages": "page range" }
+  },
+  {
+    "id": "invoice-parse",
+    "serviceName": "BillReader",
+    "description": "Extract structured fields from an invoice: supplier, totals, tax and line items.",
+    "tags": ["document", "invoice", "finance"],
+    "resource": "https://billreader.example/v1/invoice",
+    "params": { "url": "invoice file URL" }
+  },
+
+  {
+    "id": "shipment-track",
+    "serviceName": "ParcelTrace",
+    "description": "Track a parcel across major carriers and return the latest scan and estimated delivery.",
+    "tags": ["logistics", "shipping", "tracking"],
+    "resource": "https://parceltrace.example/v1/track/:tracking",
+    "params": { "tracking": "carrier tracking number" }
+  },
+  {
+    "id": "flight-status",
+    "serviceName": "GateInfo",
+    "description": "Live flight status: departure and arrival gates, delays and aircraft type.",
+    "tags": ["travel", "flights", "aviation"],
+    "resource": "https://gateinfo.example/v1/flight/:number",
+    "params": { "number": "IATA flight number", "date": "departure date" }
+  },
+  {
+    "id": "train-times",
+    "serviceName": "RailBoard",
+    "description": "Live departure boards and platform numbers for national rail stations.",
+    "tags": ["travel", "rail", "transit"],
+    "resource": "https://railboard.example/v1/departures/:station",
+    "params": { "station": "station code" }
+  },
+  {
+    "id": "transit-nearby",
+    "serviceName": "StopFinder",
+    "description": "Find public transport stops near a coordinate with the next scheduled arrivals.",
+    "tags": ["travel", "transit", "geo"],
+    "resource": "https://stopfinder.example/v1/nearby",
+    "params": { "lat": "latitude", "lon": "longitude", "radius": "metres" }
+  },
+
+  {
+    "id": "sports-scores",
+    "serviceName": "MatchPulse",
+    "description": "Live scores, fixtures and league tables for football, basketball and tennis.",
+    "tags": ["sports", "scores", "live"],
+    "resource": "https://matchpulse.example/v1/scores/:league",
+    "params": { "league": "competition identifier" }
+  },
+  {
+    "id": "news-headlines",
+    "serviceName": "WireDesk",
+    "description": "Latest news headlines filtered by topic, region and publication with source links.",
+    "tags": ["news", "media", "headlines"],
+    "resource": "https://wiredesk.example/v1/headlines",
+    "params": { "topic": "subject area", "region": "country code" }
+  },
+  {
+    "id": "wikipedia-summary",
+    "serviceName": "EncycloBrief",
+    "description": "Short encyclopedia summary of any topic with a link to the full article.",
+    "tags": ["reference", "encyclopedia", "knowledge"],
+    "resource": "https://encyclobrief.example/v1/summary/:topic",
+    "params": { "topic": "article title" }
+  },
+  {
+    "id": "unit-convert",
+    "serviceName": "MeasureMate",
+    "description": "Convert between units of length, mass, volume, temperature and energy.",
+    "tags": ["tools", "conversion", "units"],
+    "resource": "https://measuremate.example/v1/convert",
+    "params": { "from": "source unit", "to": "target unit", "value": "numeric quantity" }
+  },
+  {
+    "id": "qr-generate",
+    "serviceName": "CodeMaker",
+    "description": "Generate a QR code image encoding a URL or arbitrary text at a chosen size.",
+    "tags": ["tools", "qr", "image"],
+    "resource": "https://codemaker.example/v1/qr",
+    "params": { "data": "text to encode", "size": "pixel size" }
+  },
+  {
+    "id": "password-breach",
+    "serviceName": "LeakGuard",
+    "description": "Check whether a password hash appears in known credential breach corpora.",
+    "tags": ["security", "passwords", "breach"],
+    "resource": "https://leakguard.example/v1/breach",
+    "params": { "hashPrefix": "first five characters of the SHA-1 hash" }
+  },
+  {
+    "id": "malware-scan",
+    "serviceName": "FileGuard",
+    "description": "Scan a file or URL against multiple antivirus engines and return detection verdicts.",
+    "tags": ["security", "malware", "scanning"],
+    "resource": "https://fileguard.example/v1/scan",
+    "params": { "url": "file or page URL" }
+  }
+]

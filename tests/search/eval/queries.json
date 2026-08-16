@@ -1,0 +1,214 @@
+[
+  {
+    "query": "current weather forecast",
+    "relevant": {
+      "weather-current": 3,
+      "weather-hourly": 2,
+      "weather-historical": 1,
+      "weather-marine": 1
+    }
+  },
+  {
+    "query": "what is the temperature right now",
+    "relevant": { "weather-current": 3, "weather-hourly": 1 }
+  },
+  {
+    "query": "rain probability next few hours",
+    "relevant": { "weather-hourly": 3, "weather-current": 1 }
+  },
+  { "query": "SkyCast", "relevant": { "weather-current": 3, "weather-hourly": 3 } },
+  { "query": "tide tables and wave height", "relevant": { "weather-marine": 3 } },
+  { "query": "sea conditions for sailing", "relevant": { "weather-marine": 3 } },
+  {
+    "query": "past weather records for a station",
+    "relevant": { "weather-historical": 3, "weather-current": 1 }
+  },
+  { "query": "pollution levels and smog", "relevant": { "air-quality": 3 } },
+  { "query": "pollen count today", "relevant": { "air-quality": 3 } },
+  { "query": "how clean is the air in my city", "relevant": { "air-quality": 3 } },
+
+  {
+    "query": "share price of a company",
+    "relevant": { "stock-quote": 3, "stock-fundamentals": 2 }
+  },
+  { "query": "real time equity quotes", "relevant": { "stock-quote": 3 } },
+  { "query": "price to earnings ratio", "relevant": { "stock-fundamentals": 3, "stock-quote": 1 } },
+  {
+    "query": "company balance sheet data",
+    "relevant": { "stock-fundamentals": 3, "company-lookup": 1 }
+  },
+  { "query": "convert dollars to euros", "relevant": { "forex-rate": 3, "unit-convert": 1 } },
+  { "query": "currency exchange rates", "relevant": { "forex-rate": 3 } },
+  { "query": "bitcoin price", "relevant": { "crypto-price": 3 } },
+  { "query": "how much is XLM worth", "relevant": { "crypto-price": 3 } },
+  {
+    "query": "blockchain transaction statistics",
+    "relevant": { "crypto-onchain": 3, "crypto-price": 1 }
+  },
+  { "query": "active wallet addresses per chain", "relevant": { "crypto-onchain": 3 } },
+
+  {
+    "query": "turn an address into coordinates",
+    "relevant": { "geocode-forward": 3, "geocode-reverse": 1 }
+  },
+  { "query": "geocoding api", "relevant": { "geocode-forward": 3, "geocode-reverse": 2 } },
+  {
+    "query": "what address is at this latitude and longitude",
+    "relevant": { "geocode-reverse": 3, "geocode-forward": 1 }
+  },
+  { "query": "driving directions between two places", "relevant": { "routing-directions": 3 } },
+  { "query": "how long will it take to cycle there", "relevant": { "routing-directions": 3 } },
+  { "query": "which time zone is this location in", "relevant": { "timezone-lookup": 3 } },
+  { "query": "utc offset for coordinates", "relevant": { "timezone-lookup": 3 } },
+  { "query": "height above sea level", "relevant": { "elevation": 3 } },
+  { "query": "terrain altitude data", "relevant": { "elevation": 3 } },
+  { "query": "nearest bus stop", "relevant": { "transit-nearby": 3 } },
+
+  {
+    "query": "translate text to another language",
+    "relevant": { "translate-text": 3, "language-detect": 1 }
+  },
+  {
+    "query": "what language is this written in",
+    "relevant": { "language-detect": 3, "translate-text": 1 }
+  },
+  { "query": "is this review positive or negative", "relevant": { "sentiment": 3 } },
+  { "query": "sentiment analysis", "relevant": { "sentiment": 3 } },
+  { "query": "shorten a long document", "relevant": { "summarize": 3 } },
+  {
+    "query": "summarise an article into bullet points",
+    "relevant": { "summarize": 3, "html-extract": 1 }
+  },
+  {
+    "query": "read text from a scanned document",
+    "relevant": { "ocr": 3, "pdf-extract-tables": 1 }
+  },
+  { "query": "optical character recognition", "relevant": { "ocr": 3 } },
+  { "query": "extract text from an image", "relevant": { "ocr": 3, "image-caption": 1 } },
+
+  { "query": "make a picture from a description", "relevant": { "image-generate": 3 } },
+  { "query": "ai image generation from a prompt", "relevant": { "image-generate": 3 } },
+  { "query": "increase the resolution of a photo", "relevant": { "image-upscale": 3 } },
+  { "query": "make a blurry photo sharper", "relevant": { "image-upscale": 3 } },
+  { "query": "remove the background from a photo", "relevant": { "background-removal": 3 } },
+  { "query": "transparent png cutout", "relevant": { "background-removal": 3 } },
+  { "query": "alt text for accessibility", "relevant": { "image-caption": 3 } },
+  { "query": "describe what is in this picture", "relevant": { "image-caption": 3 } },
+  {
+    "query": "hide people's faces in photos",
+    "relevant": { "face-blur": 3, "background-removal": 1 }
+  },
+  { "query": "gdpr privacy blurring", "relevant": { "face-blur": 3 } },
+
+  { "query": "transcribe audio to text", "relevant": { "speech-to-text": 3 } },
+  { "query": "meeting recording transcript with speakers", "relevant": { "speech-to-text": 3 } },
+  {
+    "query": "convert text into spoken audio",
+    "relevant": { "text-to-speech": 3, "speech-to-text": 1 }
+  },
+  { "query": "voice synthesis", "relevant": { "text-to-speech": 3 } },
+  { "query": "what song is this", "relevant": { "music-identify": 3 } },
+  { "query": "identify music from a clip", "relevant": { "music-identify": 3 } },
+
+  { "query": "check if an email address is real", "relevant": { "email-validate": 3 } },
+  { "query": "detect disposable email providers", "relevant": { "email-validate": 3 } },
+  { "query": "validate a phone number", "relevant": { "phone-validate": 3 } },
+  { "query": "normalise mobile numbers to e164", "relevant": { "phone-validate": 3 } },
+  { "query": "check a bank account number", "relevant": { "iban-validate": 3 } },
+  { "query": "iban validation", "relevant": { "iban-validate": 3 } },
+  { "query": "verify a vat number", "relevant": { "vat-lookup": 3, "company-lookup": 1 } },
+  { "query": "european tax registration check", "relevant": { "vat-lookup": 3 } },
+
+  { "query": "look up a registered company", "relevant": { "company-lookup": 3, "vat-lookup": 1 } },
+  { "query": "who are the directors of a business", "relevant": { "company-lookup": 3 } },
+  { "query": "who owns this domain name", "relevant": { "domain-whois": 3, "dns-lookup": 1 } },
+  { "query": "domain expiry date", "relevant": { "domain-whois": 3 } },
+  { "query": "dns records for a hostname", "relevant": { "dns-lookup": 3, "domain-whois": 1 } },
+  { "query": "mx record lookup", "relevant": { "dns-lookup": 3, "email-validate": 1 } },
+  { "query": "where is this ip address located", "relevant": { "ip-geolocation": 3 } },
+  { "query": "geolocate a visitor by ip", "relevant": { "ip-geolocation": 3 } },
+  { "query": "when does my ssl certificate expire", "relevant": { "ssl-check": 3 } },
+  { "query": "tls certificate inspection", "relevant": { "ssl-check": 3 } },
+
+  { "query": "screenshot of a website", "relevant": { "url-screenshot": 3, "url-to-pdf": 1 } },
+  { "query": "capture a web page as an image", "relevant": { "url-screenshot": 3 } },
+  { "query": "save a web page as pdf", "relevant": { "url-to-pdf": 3, "url-screenshot": 1 } },
+  { "query": "convert html to pdf", "relevant": { "url-to-pdf": 3 } },
+  {
+    "query": "get the article text without adverts",
+    "relevant": { "html-extract": 3, "summarize": 1 }
+  },
+  { "query": "reader mode content extraction", "relevant": { "html-extract": 3 } },
+  { "query": "parse an rss feed", "relevant": { "rss-parse": 3 } },
+  { "query": "atom feed to json", "relevant": { "rss-parse": 3 } },
+
+  { "query": "combine several pdfs into one", "relevant": { "pdf-merge": 3 } },
+  { "query": "merge pdf documents", "relevant": { "pdf-merge": 3 } },
+  { "query": "pull tables out of a pdf report", "relevant": { "pdf-extract-tables": 3, "ocr": 1 } },
+  { "query": "extract csv data from a document", "relevant": { "pdf-extract-tables": 3 } },
+  {
+    "query": "read the total from an invoice",
+    "relevant": { "invoice-parse": 3, "pdf-extract-tables": 1 }
+  },
+  { "query": "supplier and line items from a bill", "relevant": { "invoice-parse": 3 } },
+
+  { "query": "where is my parcel", "relevant": { "shipment-track": 3 } },
+  { "query": "track a delivery across carriers", "relevant": { "shipment-track": 3 } },
+  { "query": "is my flight delayed", "relevant": { "flight-status": 3 } },
+  { "query": "arrival gate for a flight", "relevant": { "flight-status": 3 } },
+  { "query": "next trains from a station", "relevant": { "train-times": 3, "transit-nearby": 1 } },
+  { "query": "railway departure board", "relevant": { "train-times": 3 } },
+  {
+    "query": "public transport stops near me",
+    "relevant": { "transit-nearby": 3, "train-times": 1 }
+  },
+
+  { "query": "football scores today", "relevant": { "sports-scores": 3 } },
+  { "query": "league table standings", "relevant": { "sports-scores": 3 } },
+  { "query": "latest news headlines", "relevant": { "news-headlines": 3 } },
+  { "query": "top stories by topic", "relevant": { "news-headlines": 3, "rss-parse": 1 } },
+  {
+    "query": "encyclopedia article summary",
+    "relevant": { "wikipedia-summary": 3, "summarize": 1 }
+  },
+  { "query": "quick facts about a subject", "relevant": { "wikipedia-summary": 3 } },
+  { "query": "convert kilograms to pounds", "relevant": { "unit-convert": 3 } },
+  { "query": "temperature unit conversion", "relevant": { "unit-convert": 3 } },
+  { "query": "generate a qr code", "relevant": { "qr-generate": 3 } },
+  { "query": "barcode image for a url", "relevant": { "qr-generate": 3 } },
+  { "query": "has this password been leaked", "relevant": { "password-breach": 3 } },
+  { "query": "credential breach check", "relevant": { "password-breach": 3 } },
+  { "query": "scan a file for viruses", "relevant": { "malware-scan": 3 } },
+  { "query": "antivirus check for a url", "relevant": { "malware-scan": 3, "ssl-check": 1 } },
+
+  {
+    "query": "weather api",
+    "relevant": {
+      "weather-current": 3,
+      "weather-hourly": 3,
+      "weather-marine": 2,
+      "weather-historical": 2,
+      "air-quality": 1
+    }
+  },
+  {
+    "query": "financial market data",
+    "relevant": { "stock-quote": 3, "stock-fundamentals": 2, "forex-rate": 2, "crypto-price": 2 }
+  },
+  {
+    "query": "image editing tools",
+    "relevant": { "image-upscale": 3, "background-removal": 3, "face-blur": 2, "image-generate": 1 }
+  },
+  {
+    "query": "document processing",
+    "relevant": { "pdf-merge": 3, "pdf-extract-tables": 3, "invoice-parse": 3, "ocr": 2 }
+  },
+  {
+    "query": "security scanning",
+    "relevant": { "malware-scan": 3, "password-breach": 2, "ssl-check": 2 }
+  },
+  {
+    "query": "natural language processing",
+    "relevant": { "sentiment": 3, "summarize": 3, "translate-text": 2, "language-detect": 2 }
+  }
+]

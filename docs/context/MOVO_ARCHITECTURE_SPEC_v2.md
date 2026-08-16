@@ -88,6 +88,78 @@ These live in `CONTRIBUTING.md`; summarised here because they govern how any sec
 
 ---
 
+---
+
+## B. Post-M6 rulings (consolidated into §24, §8.2)
+
+M6 complete on testnet; pubnet correctly UNVERIFIED. Recorded here as binding corrections; folded
+into the sections named. These extend §A — the register format continues.
+
+### B.1 AC6.6 non-custody — corrected, the literal form was unsatisfiable
+
+**THE DEFECT (in the spec, not the implementation).** AC6.6 and §8.2 required the facilitator
+address to appear as **none** of four positions — transaction source, operation source, transfer
+`from`, any auth-entry address — on "any settled payment." This is unsatisfiable by construction:
+**fee sponsorship makes the facilitator the transaction source of the settled transaction** — that
+is the mechanism, and Gate 1's own `CONFORMANCE.md` recorded it (`GC6CSXBV…` as fee payer). The
+literal AC contradicts a fact the project established at M2.
+
+**CORRECTED INVARIANT (binding).** Non-custody is asserted in two parts:
+- On the **buyer-signed transaction** (the authorization the buyer produces): the facilitator
+  address appears in **none** of the four positions. This is the real non-custody property — the
+  buyer authorizes a transfer the facilitator cannot redirect to itself.
+- On the **settled transaction** (what the facilitator submits): the facilitator is the
+  **transaction source and fee payer** (fee sponsorship) and **must not** be the transfer `from`,
+  the operation source of the transfer, or an auth-entry signer for the transfer itself.
+  `extra.areFeesSponsored: true` is the observable form of the fourth position.
+
+The test asserts both halves. A facilitator that appeared as transfer `from`, or that could
+redirect the transfer, fails — that is custody. Being the fee payer is not custody; it is the
+service the facilitator provides. §8.2 and AC6.6 are amended to this two-part form.
+
+**This was flagged for amendment, not STOPped, correctly** — there was one coherent buildable
+reading and no second reading to guess between, so the STOP rule (which guards against guessing
+between two readings) did not apply.
+
+### B.2 The AC6.8 concurrency gate — a plausible fake caught, and the real defect it hid
+
+**Recorded as the sharpest operational instance of hard rule 5 to date.** The first AC6.8 test
+grepped rejection reasons for `/seq/` and passed while **190 of 200 settlements failed** — upstream
+collapses `tx_bad_seq` into an opaque `settle_exact_stellar_transaction_submission_failed`, so the
+grep matched nothing and reported green over a broken money path. Caught by not trusting the green.
+
+The real defect: the signer pool spread load **across** accounts as if they were weights, but a
+Stellar account's sequence number makes it a **mutex** — concurrent submissions from one account
+collide on sequence, so exactly one settlement per sponsor succeeded (5→5/5, 10→5/10, 200→5/200).
+**Binding lesson for M7 and any concurrent settlement path:** a sponsor account is a mutex, not a
+weight — lease one at a time and queue; never assert on a reason-string grep where upstream may
+collapse the distinguishing reason into an opaque one. Assert on the **settled count**.
+
+### B.3 Carried into M7 / M8 — pubnet and the remaining ACs
+
+| Item | Status | Needs |
+|---|---|---|
+| AC6.2 pubnet settlement | **UNVERIFIED** (not failed) | funded pubnet sponsors; a KMS/HSM signer; an RPC provider; the §16a Audit Bank review |
+| AC6.4 pubnet half | **UNVERIFIED** | the above; testnet half is ✅ 7/7 |
+| AC6.11 `__check_auth` live proof | **UNVERIFIED, no upstream gap** | a deployed `__check_auth` contract (needs Stellar CLI + wasm32, absent from the build env). Upstream confirmed to accept contract-address credentials; Movo needs no change — it never inspects credential types |
+| 2 of 9 upstream e2e scenarios | blocked (Windows MAX_PATH in `next` server's Turbopack build, before any payment code) | a non-Windows CI runner, or exclude with a documented reason |
+| §16a Audit Bank | **not started** | external lead time — start before the mainnet production tag, not at release |
+
+**Two disclosed harness modifications** (in `CONFORMANCE.md`, neither touches an assertion or a
+payment path): a `shell: win32` flag on the harness spawn (else `spawn pnpm ENOENT`), and throwaway
+EVM/SVM keys the stock client constructs unconditionally at startup. Both are environment
+accommodations, not conformance concessions. **Action for M7/M8:** re-run the full upstream e2e
+suite on a Linux CI runner to retire both accommodations and unblock the 2 skipped scenarios, so
+the RFP-acceptance conformance run is clean of environment caveats.
+
+### B.4 Pubnet is a committed RFP deliverable — do not let it drift
+
+AC6.2/AC6.4-pubnet are **UNVERIFIED**, which is honest and correct for M6's environment, but the
+RFP names both networks as committed deliverables (RFP_COVERAGE_MAP.md §1). Pubnet is not optional
+polish — it is half the facilitator deliverable and the trigger for the Audit Bank review. It
+must be closed before v0.1.0's production tag, with its own human-gated prerequisites (funds, key
+management, RPC, audit) started early. The M6 testnet result does not discharge it.
+
 ## 0. Executive Architecture Summary
 
 ### 0.1 The finding that reshapes the plan

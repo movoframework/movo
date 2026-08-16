@@ -13,6 +13,9 @@
     },
     {
       "path": "../../packages/facilitator"
+    },
+    {
+      "path": "../../packages/catalog"
     }
   ]
 }

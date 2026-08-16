@@ -14,8 +14,19 @@
   },
   "dependencies": {
     "@hono/node-server": "2.1.1",
+    "@movoframework/catalog": "workspace:*",
     "@movoframework/core": "workspace:*",
     "@movoframework/facilitator": "workspace:*",
     "hono": "4.13.2"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/app.d.ts",
+      "default": "./dist/app.js"
+    },
+    "./catalog-wiring": {
+      "types": "./dist/catalog-wiring.d.ts",
+      "default": "./dist/catalog-wiring.js"
+    }
   }
 }

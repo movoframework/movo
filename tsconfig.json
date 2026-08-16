@@ -26,6 +26,12 @@
       "path": "packages/facilitator"
     },
     {
+      "path": "packages/catalog"
+    },
+    {
+      "path": "packages/mcp"
+    },
+    {
       "path": "packages/create-movo-app"
     },
     {
@@ -36,6 +42,12 @@
     },
     {
       "path": "examples/agent-buyer"
+    },
+    {
+      "path": "examples/catalog-quickstart"
+    },
+    {
+      "path": "examples/mcp-agent"
     },
     {
       "path": "apps/facilitator"

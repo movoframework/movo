@@ -39,10 +39,13 @@ export {
 export {
   constantTimeEquals,
   createFacilitator,
+  type ExtensionResponse,
+  encodeExtensionResponses,
   type FacilitatorReadiness,
   type FacilitatorRequest,
   type FacilitatorResponse,
   type MovoFacilitator,
+  type SettlementObserver,
   type SignerPoolView,
 } from "./facilitator.js";
 export {

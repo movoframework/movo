@@ -88,6 +88,197 @@ These live in `CONTRIBUTING.md`; summarised here because they govern how any sec
 
 ---
 
+---
+
+## B. Post-M6 rulings (consolidated into §24, §8.2)
+
+M6 complete on testnet; pubnet correctly UNVERIFIED. Recorded here as binding corrections; folded
+into the sections named. These extend §A — the register format continues.
+
+### B.1 AC6.6 non-custody — corrected, the literal form was unsatisfiable
+
+**THE DEFECT (in the spec, not the implementation).** AC6.6 and §8.2 required the facilitator
+address to appear as **none** of four positions — transaction source, operation source, transfer
+`from`, any auth-entry address — on "any settled payment." This is unsatisfiable by construction:
+**fee sponsorship makes the facilitator the transaction source of the settled transaction** — that
+is the mechanism, and Gate 1's own `CONFORMANCE.md` recorded it (`GC6CSXBV…` as fee payer). The
+literal AC contradicts a fact the project established at M2.
+
+**CORRECTED INVARIANT (binding).** Non-custody is asserted in two parts:
+- On the **buyer-signed transaction** (the authorization the buyer produces): the facilitator
+  address appears in **none** of the four positions. This is the real non-custody property — the
+  buyer authorizes a transfer the facilitator cannot redirect to itself.
+- On the **settled transaction** (what the facilitator submits): the facilitator is the
+  **transaction source and fee payer** (fee sponsorship) and **must not** be the transfer `from`,
+  the operation source of the transfer, or an auth-entry signer for the transfer itself.
+  `extra.areFeesSponsored: true` is the observable form of the fourth position.
+
+The test asserts both halves. A facilitator that appeared as transfer `from`, or that could
+redirect the transfer, fails — that is custody. Being the fee payer is not custody; it is the
+service the facilitator provides. §8.2 and AC6.6 are amended to this two-part form.
+
+**This was flagged for amendment, not STOPped, correctly** — there was one coherent buildable
+reading and no second reading to guess between, so the STOP rule (which guards against guessing
+between two readings) did not apply.
+
+### B.2 The AC6.8 concurrency gate — a plausible fake caught, and the real defect it hid
+
+**Recorded as the sharpest operational instance of hard rule 5 to date.** The first AC6.8 test
+grepped rejection reasons for `/seq/` and passed while **190 of 200 settlements failed** — upstream
+collapses `tx_bad_seq` into an opaque `settle_exact_stellar_transaction_submission_failed`, so the
+grep matched nothing and reported green over a broken money path. Caught by not trusting the green.
+
+The real defect: the signer pool spread load **across** accounts as if they were weights, but a
+Stellar account's sequence number makes it a **mutex** — concurrent submissions from one account
+collide on sequence, so exactly one settlement per sponsor succeeded (5→5/5, 10→5/10, 200→5/200).
+**Binding lesson for M7 and any concurrent settlement path:** a sponsor account is a mutex, not a
+weight — lease one at a time and queue; never assert on a reason-string grep where upstream may
+collapse the distinguishing reason into an opaque one. Assert on the **settled count**.
+
+### B.3 Carried into M7 / M8 — pubnet and the remaining ACs
+
+| Item | Status | Needs |
+|---|---|---|
+| AC6.2 pubnet settlement | **UNVERIFIED** (not failed) | funded pubnet sponsors; a KMS/HSM signer; an RPC provider; the §16a Audit Bank review |
+| AC6.4 pubnet half | **UNVERIFIED** | the above; testnet half is ✅ 7/7 |
+| AC6.11 `__check_auth` live proof | **UNVERIFIED, no upstream gap** | a deployed `__check_auth` contract (needs Stellar CLI + wasm32, absent from the build env). Upstream confirmed to accept contract-address credentials; Movo needs no change — it never inspects credential types |
+| 2 of 9 upstream e2e scenarios | blocked (Windows MAX_PATH in `next` server's Turbopack build, before any payment code) | a non-Windows CI runner, or exclude with a documented reason |
+| §16a Audit Bank | **not started** | external lead time — start before the mainnet production tag, not at release |
+
+**Two disclosed harness modifications** (in `CONFORMANCE.md`, neither touches an assertion or a
+payment path): a `shell: win32` flag on the harness spawn (else `spawn pnpm ENOENT`), and throwaway
+EVM/SVM keys the stock client constructs unconditionally at startup. Both are environment
+accommodations, not conformance concessions. **Action for M7/M8:** re-run the full upstream e2e
+suite on a Linux CI runner to retire both accommodations and unblock the 2 skipped scenarios, so
+the RFP-acceptance conformance run is clean of environment caveats.
+
+### B.4 Pubnet is a committed RFP deliverable — do not let it drift
+
+AC6.2/AC6.4-pubnet are **UNVERIFIED**, which is honest and correct for M6's environment, but the
+RFP names both networks as committed deliverables (RFP_COVERAGE_MAP.md §1). Pubnet is not optional
+polish — it is half the facilitator deliverable and the trigger for the Audit Bank review. It
+must be closed before v0.1.0's production tag, with its own human-gated prerequisites (funds, key
+management, RPC, audit) started early. The M6 testnet result does not discharge it.
+
+## C. Post-M7 (partial) rulings — catalog/discovery complete, MCP carried forward
+
+M7 stopped honestly at the catalog/search ↔ MCP seam. `packages/catalog`, discovery routes,
+ingest, the six integrity controls, and measured search quality are built and verified; the MCP
+track (`packages/mcp`, AC7.7–7.9), two example integrations, the role-based guide, and any testnet
+e2e are not built. Binding corrections below; the rest carries to the M7-completion session.
+
+### C.1 Integrity escalation must read the RAW extension, before extraction (binding, security)
+
+**FINDING (by test, not prediction).** Upstream **soft-drops** an invalid `routeTemplate`/`iconUrl`
+and returns `null` on invalid `info` — it does **not** throw. An integrity control that inspects
+only upstream's *output* therefore sees the malformed field silently dropped and reports **success
+on the attack** (the percent-encoded traversal and loopback-iconUrl cases). This is the plausible
+fake in its trust-boundary form: the control "passes" because upstream swallowed the evidence.
+
+**RULING.** Catalog-integrity escalation reads the **raw resource extension from the payload before
+upstream extraction**, compares it against what survives extraction, and escalates any field
+upstream soft-dropped to a distinct non-null rejection reason. Asserting on post-extraction output
+alone is insufficient and is a defect. §25's AC7.5 is amended: the six adversarial controls assert
+on **stored catalog state and the raw-vs-extracted delta**, never on upstream's post-extraction
+output alone. This mirrors §A's delegation rule (ex-007): consuming a delegate's result includes
+detecting what the delegate silently discarded.
+
+### C.2 Upstream API corrections — §25 (M7 spec) was written against names that changed
+
+`[FACT — installed declarations]`
+1. **`validateRouteTemplate` is `@deprecated`; use `isValidRouteTemplate`.** §25/§7.3 names the
+   deprecated function. Corrected to `isValidRouteTemplate`. Percent-decode still precedes the
+   traversal check.
+2. **Template dialect is Express `:param`, not OpenAPI `{param}`.** Any doc or test using `{param}`
+   in a routeTemplate is wrong.
+3. **The resource block lives on the `PaymentPayload`, not on `accepts`.** Ingest reads it from the
+   payload. (This is also why §C.1 is reachable — the raw block is on the payload to inspect.)
+
+### C.3 Confirmations from §B — both held
+
+- §B.1 non-custody: ingest derives the owner from `paymentRequirements.payTo` and **never reads the
+  settled transaction** — the `ingest.ts` header records that deriving ownership from the settled tx
+  would find the facilitator as source on every settlement (fee sponsorship) and refuse every happy-
+  path listing. Correct.
+- §B.2 mutex-correct writes: SQLite compare-and-write inside one `IMMEDIATE` transaction; Postgres
+  `ON CONFLICT … WHERE listings.pay_to = EXCLUDED.pay_to`. Tested with concurrent conflicting
+  writers asserting on stored state, not reason strings. Correct.
+
+### C.4 Carried into the M7-completion session
+
+| Item | Status | Note |
+|---|---|---|
+| MCP: `packages/mcp`, AC7.7–7.9 | **NOT BUILT** | three tools; `bazaar.paidCall` **must** refuse an over-budget call without producing a signature; structured I/O, machine-readable codes, non-null reason on every rejection |
+| AC7.10 Postgres store | **UNVERIFIED** | store written, never run against a real Postgres — run it |
+| AC7.1 / AC7.3 testnet e2e | integration-only | proven at integration; no testnet e2e run for M7 |
+| Two example integrations; role-based guide (+ upstream to Stellar Dev Docs); `docs/discovery/*`, `docs/mcp/*`; ADR-0013; changeset | **NOT BUILT** | M7 exit-gate items (§25.16) |
+
+The completion session resumes on `feat/m7-catalog-discovery` (WIP committed) — it does not rebuild
+the catalog/discovery half. Read that half first, then build MCP + examples + docs + e2e.
+
+### C.5 Environment note (not a spec matter)
+
+The build host filled to 0 bytes mid-session, blocking work; the agent reclaimed space by deleting
+the x402 scratch clone (evidence already in `CONFORMANCE.md`) and pruning Docker cache. Reclaim
+disk before the completion session — a full disk mid-run is a work-loss risk, especially with an
+uncommitted tree.
+
+---
+
+## D. Post-M7 (complete) rulings
+
+M7 complete on `feat/m7-catalog-discovery`; all ten ACs met. Testnet hashes recorded for AC7.1/7.3
+(`e3270f26…`) and AC7.8 (`06b1de09…`). Binding items below.
+
+### D.1 Two latent defects — the "tested only on the branch production never takes" pattern
+
+Both found by running the real path, not by the suite that nominally covered them. Recorded as the
+defining instances of the pattern for M8's benefit.
+
+- **`maxTotalSpend` was inert across M4–M6.** `SettleResponse.amount` is optional and `exact` never
+  populates it, so `budget.record` never ran on a real Stellar settlement — `spent()` stayed `"0"`
+  and the cumulative cap could not fire. Invisible because every unit test drove `record()` directly
+  with an amount, exercising the branch production never takes. Fixed via `recordAuthorized()` with a
+  regression test. **Lesson for M8:** a budget/limit test must drive the code path a real settlement
+  produces (amount absent), not a synthetic one (amount supplied).
+- **`$ref` check ran after the schema validator**, handing an attacker-supplied `$ref` URL to a
+  resolver on the settle path and reporting `listing_info_invalid` instead of its own reason —
+  AC7.5's six distinct reasons silently collapsed to five on the real ingest path. Fixed by
+  reordering. **Lesson:** assert on the *distinct reason per attack*, not merely on rejection; a
+  reason-collapse is invisible to a test that checks only that rejection occurred.
+
+Both reinforce the standing rule: typechecking and passing are not running. The Postgres AC7.10
+run found a third instance — `"extensions ? ?"` ate the jsonb operator, a syntax error on every
+filtered query in code that typechecked and had never executed (fixed to `jsonb_exists`).
+
+### D.2 `readCatalogOutcome` is `unknown` through a resource server — upstream gap, no Movo change
+
+`[FACT]` Upstream logs `EXTENSION-RESPONSES` but never forwards it to the buyer through an x402
+resource server, so `readCatalogOutcome` resolves to `unknown` on that path by construction. This
+is an upstream limitation, not a Movo defect; the decoder is correct and remains justified for
+paths that do carry the header. Logged as an upstream contribution (`docs/discovery/upstream-
+contributions.md`). No change warranted.
+
+### D.3 Carried into M8 — the release/hardening milestone
+
+| Item | Status | Note |
+|---|---|---|
+| Pubnet AC6.2 / AC6.4-pubnet | **UNVERIFIED — committed RFP deliverable** | funds, KMS/HSM key story, RPC provider, Audit Bank review. Blocks the mainnet production tag; not deferrable past v0.1.0 |
+| §16a Audit Bank review | **not started** | external lead time — start now regardless of M8 progress |
+| Upstream e2e on Linux | not re-run | retires M6's two disclosed harness accommodations (`shell: win32`, throwaway EVM/SVM keys); required for a caveat-free RFP conformance run |
+| Guide → Stellar Developer Docs | in-repo complete; not submitted | tracked with a done-state in `docs/discovery/upstream-contributions.md` |
+| Stock-client conformance suite (§1.16 layer 4) | **the RFP's literal acceptance test** | both networks, settled hash per network per scheme, non-null reason on every rejection. M8's headline deliverable, not cleanup |
+
+### D.4 Environment (not a spec matter)
+
+Disk at 143 MB free — the MiniLM eval weights consumed most of the prior 2 GB. **Clear before M8**;
+a full disk with an uncommitted tree is a work-loss risk (it already interrupted the M7 catalog
+session). `.env` line 35 reads `MOVO_E2E= 1` (stray space) — the reason the e2e gate stayed off;
+fix the file rather than passing it explicitly each run. A `movo-catalog-pg` container remains on
+port 5434 for AC7.10 re-runs (`docker rm -f movo-catalog-pg` to remove).
+
+---
+
 ## 0. Executive Architecture Summary
 
 ### 0.1 The finding that reshapes the plan

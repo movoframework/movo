@@ -19,9 +19,11 @@
  * request with credentials present and asserts zero occurrences of any of them.
  */
 
+import type { Catalog } from "@movoframework/catalog";
 import { newCorrelationId, redactRecord } from "@movoframework/core";
 import type { FacilitatorRequest, MovoFacilitator } from "@movoframework/facilitator";
 import { Hono } from "hono";
+import { mountDiscoveryRoutes } from "./discovery.js";
 
 /** Where a log line goes. Injected so tests can capture instead of writing to stdout. */
 export type LogSink = (record: { readonly [key: string]: unknown }) => void;
@@ -33,6 +35,15 @@ export interface FacilitatorAppOptions {
   readonly log?: LogSink;
   /** Service version reported by `/health`. */
   readonly version?: string;
+  /**
+   * When present, mounts `/discovery/resources`, `/discovery/search` and `/browse`.
+   *
+   * Optional because the discovery track is gated separately from the facilitator: a
+   * deployment may settle payments without operating a catalog, and §7.2 requires Movo to be
+   * explicit that cataloguing happens at the facilitator the seller chose — which means a
+   * facilitator must be able to honestly not have one.
+   */
+  readonly catalog?: Catalog;
 }
 
 /** The Hono app type this module produces. */
@@ -155,6 +166,8 @@ export function createFacilitatorApp(options: FacilitatorAppOptions): Facilitato
       })),
     }),
   );
+
+  if (options.catalog !== undefined) mountDiscoveryRoutes(app, options.catalog);
 
   app.notFound((context) =>
     context.json({ error: "not_found", message: "No such endpoint on this facilitator." }, 404),

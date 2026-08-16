@@ -29,8 +29,16 @@ import { parseArgs } from "node:util";
 
 const REPO_ROOT: string = resolve(fileURLToPath(import.meta.url), "..", "..");
 
-/** Directories scanned for projects, relative to the root. */
-const PROJECT_PARENTS: readonly string[] = ["packages", "examples"];
+/**
+ * Directories scanned for projects, relative to the root.
+ *
+ * `apps` belongs here for the same reason the other two do: it holds workspace members with their
+ * own `tsconfig.json`, referenced from the root solution. Omitting it meant any project that
+ * legitimately depended on `apps/facilitator` had its reference reported as dangling — the gate
+ * could not see the target, so it concluded the target was not a project. Found when the M7
+ * examples took a dependency on the facilitator service.
+ */
+const PROJECT_PARENTS: readonly string[] = ["packages", "apps", "examples"];
 
 /** The protocol marking a dependency as resolved from this workspace rather than the registry. */
 const WORKSPACE_PROTOCOL = "workspace:";

@@ -53,6 +53,22 @@ export default defineConfig({
           name: "e2e",
           environment: "node",
           include: ["tests/e2e/**/*.test.ts"],
+          /**
+           * One file at a time, because every e2e file spends from the **same funded testnet
+           * buyer** and settles through the same sponsor pool.
+           *
+           * This is §B.2's lesson at the harness level: a Stellar account is a mutex, not a
+           * weight. Run in parallel, the files race each other for one account's sequence
+           * number and one sponsor pool, and the failures land wherever the timing puts them —
+           * the M7 discovery file failed on a payment that had settled cleanly moments earlier
+           * on its own. A suite that races itself reports on its own scheduling rather than on
+           * the code, which is worse than a slow suite.
+           *
+           * Within a file, ordering is the file's own business; `facilitator-settlement.test.ts`
+           * deliberately drives concurrent settlements, and that concurrency is the thing under
+           * test rather than an accident of the runner.
+           */
+          fileParallelism: false,
         },
       },
       {

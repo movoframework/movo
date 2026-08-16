@@ -71,6 +71,15 @@ export type PaymentStatus = "settled" | "settle_failed" | "payment_required" | "
 export interface CallResult<TOut> {
   /** The handler's return value, typed from the resource declaration. */
   readonly data: TOut;
+  /**
+   * The HTTP status of the response the buyer finally received.
+   *
+   * Present because "did the call work" and "was it paid for" are different questions with
+   * different answers, and a caller that has to infer one from the other gets it wrong on the
+   * case that matters: a paid route returning 404 settles nothing (§6.2 I6) and would otherwise
+   * look identical to a route nobody charged for.
+   */
+  readonly status: number;
   /** What happened to the payment. */
   readonly payment: {
     readonly status: PaymentStatus;
@@ -102,25 +111,61 @@ export interface MovoClient {
     input: TIn,
     baseUrl: string,
   ): Promise<CallResult<TOut>>;
+  /**
+   * Call a route the caller describes, rather than one a `MovoResource` declares.
+   *
+   * The same request building, the same payment handling, the same spend accounting — the only
+   * thing given up is the return type, which is `unknown` because there is no declaration to
+   * read it from. This exists for `@movoframework/mcp`'s `bazaar.paidCall`: an agent that
+   * discovered a listing holds a URL and a bag of arguments and has, by construction, no typed
+   * declaration to import. That is what "no pre-baked integration" means.
+   *
+   * It is a method on the client rather than a helper beside it so that spend recording cannot
+   * be forgotten. A `paidCall` built on the raw `fetch` would settle real payments that the
+   * cumulative accountant never saw, and `maxTotalSpend` — the cap that matters most to an
+   * autonomous agent — would never fire.
+   *
+   * @param route - Path or absolute URL, possibly carrying `:params`, and a method
+   * @param input - Values substituted into `:params`, then sent as query or JSON body
+   * @param baseUrl - The origin, used when `route.path` is relative
+   * @returns The parsed body, the payment outcome and the catalog outcome
+   */
+  callUrl(route: PaidRoute, input: unknown, baseUrl: string): Promise<CallResult<unknown>>;
+}
+
+/** A route to call: a path or absolute URL that may carry `:param` segments, and a method. */
+export interface PaidRoute {
+  readonly path: string;
+  readonly method: string;
 }
 
 /**
- * Build the request URL for a resource and input.
+ * Build the request URL and init for a route and an input.
  *
  * Path parameters are substituted from the input; whatever remains becomes a query string for
  * body-less methods, or the JSON body for the rest. This mirrors what `@movoframework/server`'s
  * handler adapter reads on the other side, which is the whole point of both sides sharing one
  * declaration.
+ *
+ * `path` is widened to accept an absolute URL so that `callUrl` — which is handed a resource
+ * URL out of a catalog listing rather than a relative path out of a declaration — shares this
+ * one copy of the substitution rule. Two copies would be two chances for the buyer to address a
+ * different URL than the seller published.
+ *
+ * @param route - The path or absolute URL, and the HTTP method
+ * @param input - Values to substitute into `:params`, then to send
+ * @param baseUrl - The origin, used when `route.path` is relative
+ * @returns The resolved URL and a `fetch` init
  */
-function buildRequest(
-  resource: AnyMovoResource,
+function buildPaidRequest(
+  route: PaidRoute,
   input: unknown,
   baseUrl: string,
 ): { url: string; init: RequestInit } {
   const values: Record<string, unknown> =
     typeof input === "object" && input !== null ? { ...(input as Record<string, unknown>) } : {};
 
-  let path = resource.path;
+  let path = route.path;
   for (const [key, value] of Object.entries(values)) {
     const token = `:${key}`;
     if (path.includes(token)) {
@@ -130,19 +175,19 @@ function buildRequest(
   }
 
   const url = new URL(path, baseUrl);
-  const carriesBody = !["GET", "HEAD", "DELETE"].includes(resource.method);
+  const carriesBody = !["GET", "HEAD", "DELETE"].includes(route.method);
 
   if (!carriesBody) {
     for (const [key, value] of Object.entries(values)) {
       url.searchParams.set(key, String(value));
     }
-    return { url: url.toString(), init: { method: resource.method } };
+    return { url: url.toString(), init: { method: route.method } };
   }
 
   return {
     url: url.toString(),
     init: {
-      method: resource.method,
+      method: route.method,
       headers: { "content-type": "application/json" },
       body: JSON.stringify(values),
     },
@@ -167,61 +212,88 @@ export function createMovoClient(options: MovoClientOptions): MovoClient {
 
   const payingFetch = wrapFetchWithPayment(globalThis.fetch, client);
 
+  const callUrl = async (
+    route: PaidRoute,
+    input: unknown,
+    baseUrl: string,
+  ): Promise<CallResult<unknown>> => {
+    const { url, init } = buildPaidRequest(route, input, baseUrl);
+    const response = await payingFetch(url, init);
+
+    const catalog = readCatalogOutcome(response.headers.get("EXTENSION-RESPONSES"));
+
+    // A 402 that survives the paying fetch means no payment was made — either the budget
+    // refused, or no acceptable offer was found. Reporting it as `payment_required` rather
+    // than throwing lets a caller inspect `budget.refusals` and decide.
+    if (response.status === 402) {
+      return {
+        data: undefined,
+        status: response.status,
+        payment: { status: "payment_required" },
+        catalog,
+      };
+    }
+
+    const header = response.headers.get(PAYMENT_HEADERS.response);
+
+    let status: PaymentStatus = "none";
+    let transaction: string | undefined;
+
+    if (header !== null) {
+      const settle = decodePaymentResponseHeader(header);
+      status = settle.success ? "settled" : "settle_failed";
+      if (typeof settle.transaction === "string" && settle.transaction.length > 0) {
+        transaction = settle.transaction;
+      }
+
+      // Spend is recorded only on a settled payment. Counting at offer-selection time would
+      // charge the buyer for payments that failed verification.
+      //
+      // `SettleResponse.amount` is **optional** and the `exact` scheme does not populate it —
+      // upstream reserves it for schemes like `upto` where the settled amount can differ from
+      // the authorised one. Before this fallback existed, every real Stellar settlement took the
+      // absent branch, `spent()` never moved, and `maxTotalSpend` was a cap that could not fire.
+      // See `Budget.recordAuthorized`.
+      if (status === "settled" && options.budget !== undefined) {
+        const amount = (settle as { amount?: unknown }).amount;
+        if (typeof amount === "string" && amount.length > 0) {
+          options.budget.record({ ...EMPTY_REQUIREMENTS, amount, network: options.network });
+        } else {
+          options.budget.recordAuthorized();
+        }
+      }
+    }
+
+    // A non-2xx body is still read and returned. The caller needs it to explain the failure,
+    // and upstream has already cancelled settlement for status >= 400, so there is no payment
+    // to protect by withholding it. A body that is not JSON yields `undefined` rather than
+    // throwing, because a paid route returning HTML is a bad server, not a client bug.
+    const data: unknown = await response.json().catch(() => undefined);
+
+    return {
+      data,
+      status: response.status,
+      payment: transaction === undefined ? { status } : { status, transaction },
+      catalog,
+    };
+  };
+
   return {
     fetch: payingFetch,
+    callUrl,
 
     call: async <TIn, TOut>(
       resource: MovoResource<TIn, TOut>,
       input: TIn,
       baseUrl: string,
     ): Promise<CallResult<TOut>> => {
-      const { url, init } = buildRequest(resource as unknown as AnyMovoResource, input, baseUrl);
-      const response = await payingFetch(url, init);
-
-      const catalog = readCatalogOutcome(response.headers.get("EXTENSION-RESPONSES"));
-
-      // A 402 that survives the paying fetch means no payment was made — either the budget
-      // refused, or no acceptable offer was found. Reporting it as `payment_required` rather
-      // than throwing lets a caller inspect `budget.refusals` and decide.
-      if (response.status === 402) {
-        return {
-          data: undefined as TOut,
-          payment: { status: "payment_required" },
-          catalog,
-        };
-      }
-
-      const header = response.headers.get(PAYMENT_HEADERS.response);
-
-      let status: PaymentStatus = "none";
-      let transaction: string | undefined;
-
-      if (header !== null) {
-        const settle = decodePaymentResponseHeader(header);
-        status = settle.success ? "settled" : "settle_failed";
-        if (typeof settle.transaction === "string" && settle.transaction.length > 0) {
-          transaction = settle.transaction;
-        }
-
-        // Spend is recorded only on a settled payment, and only from the amount the facilitator
-        // reports settling. Counting at offer-selection time would charge the buyer for payments
-        // that failed verification; counting the advertised amount rather than the settled one
-        // would drift from reality the first time a scheme supports partial settlement.
-        if (status === "settled" && options.budget !== undefined) {
-          const amount = (settle as { amount?: unknown }).amount;
-          if (typeof amount === "string" && amount.length > 0) {
-            options.budget.record({ ...EMPTY_REQUIREMENTS, amount, network: options.network });
-          }
-        }
-      }
-
-      const data = (await response.json()) as TOut;
-
-      return {
-        data,
-        payment: transaction === undefined ? { status } : { status, transaction },
-        catalog,
-      };
+      const declaration = resource as unknown as AnyMovoResource;
+      const result = await callUrl(
+        { path: declaration.path, method: declaration.method },
+        input,
+        baseUrl,
+      );
+      return result as CallResult<TOut>;
     },
   };
 }

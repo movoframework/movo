@@ -75,7 +75,46 @@ export interface Budget {
    * payments that failed verification.
    */
   record(requirements: PaymentRequirements): void;
+  /**
+   * Record a settlement whose amount the facilitator did not report.
+   *
+   * **`[FACT — installed declarations + observed on testnet]` `SettleResponse.amount` is
+   * optional**, documented upstream as "present for schemes like `upto` where settlement amount
+   * may differ from the authorized maximum". The `exact` scheme — every Stellar payment Movo
+   * makes today — does not populate it. So the amount-carrying path above never ran in
+   * production, `spent()` stayed at `"0"` through real settled payments, and **`maxTotalSpend`
+   * was inert**: the per-request cap held, and the cumulative cap silently never fired.
+   *
+   * Found by an e2e that asserted on the budget after a confirmed on-chain settlement rather
+   * than on the response alone. It is the §A.2 rule-4 shape once more — the field typechecked,
+   * the code read correctly, and the control did nothing.
+   *
+   * The fix is to count what was *authorized*. Under `exact` the authorized amount is the
+   * settled amount by definition of the scheme, so this is exact rather than an estimate; under
+   * a scheme where the two can differ, that scheme populates `amount` and `record` is used
+   * instead. Authorizations are consumed oldest-first, so N payments settle against the N
+   * offers the policy approved and the running total stays correct regardless of ordering.
+   *
+   * **Residual, stated rather than hidden:** spend is counted at settlement, not at approval, so
+   * payments genuinely in flight at the same instant are each checked against the total
+   * separately. Counting at approval instead would permanently consume the cap for every
+   * payment that was approved and then failed, which is a worse failure — an agent that
+   * gradually locks itself out. Sequential tool calls, which is what `bazaar.paidCall` makes,
+   * are unaffected either way.
+   *
+   * @returns The amount counted, or undefined when there was no outstanding authorization
+   */
+  recordAuthorized(): string | undefined;
 }
+
+/**
+ * How many approved-but-not-yet-settled offers are remembered.
+ *
+ * Bounded because an approval is only consumed by a settlement, and a payment that is approved
+ * and then fails leaves its authorization behind. Unbounded, a long-lived agent would grow this
+ * list for the lifetime of the process.
+ */
+const MAX_PENDING_AUTHORIZATIONS = 1024;
 
 /**
  * Amounts are base units and can exceed `Number.MAX_SAFE_INTEGER`, so all arithmetic and every
@@ -113,6 +152,8 @@ export function createBudget(options: BudgetOptions = {}): Budget {
 
   let spent = 0n;
   const refusals: BudgetRefusal[] = [];
+  /** Amounts the policy approved and no settlement has yet consumed. Oldest first. */
+  const authorized: bigint[] = [];
 
   function refuse(
     code: BudgetRefusal["code"],
@@ -184,6 +225,11 @@ export function createBudget(options: BudgetOptions = {}): Budget {
         return false;
       }
 
+      // Approved. Remembered so that a settlement reporting no amount — which is every `exact`
+      // settlement, see `recordAuthorized` — can still be counted against the cumulative cap.
+      authorized.push(amount);
+      if (authorized.length > MAX_PENDING_AUTHORIZATIONS) authorized.shift();
+
       return true;
     });
 
@@ -193,11 +239,22 @@ export function createBudget(options: BudgetOptions = {}): Budget {
     remaining: () => (maxTotal === undefined ? undefined : (maxTotal - spent).toString()),
     reset: () => {
       spent = 0n;
+      authorized.length = 0;
     },
     refusals,
+    recordAuthorized: () => {
+      const amount = authorized.shift();
+      if (amount === undefined) return undefined;
+      spent += amount;
+      return amount.toString();
+    },
+
     record: (requirements) => {
       try {
         spent += BigInt(requirements.amount);
+        // A settlement that reported its own amount consumes an authorization too, so a later
+        // `recordAuthorized` cannot count the same payment a second time.
+        authorized.shift();
       } catch {
         // An unparseable amount cannot have been approved by the policy above, so reaching here
         // means something bypassed it. Ignoring it would understate spend; there is nothing

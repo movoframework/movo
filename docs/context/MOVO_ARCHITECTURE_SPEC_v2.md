@@ -223,82 +223,59 @@ the x402 scratch clone (evidence already in `CONFORMANCE.md`) and pruning Docker
 disk before the completion session — a full disk mid-run is a work-loss risk, especially with an
 uncommitted tree.
 
-**Still unresolved.** The completion session began with 2.0 GB free and ended with ~150 MB, most of
-it consumed by the MiniLM weights the search eval downloads. This must be dealt with before M8.
+---
 
-## C.6 M7 complete — rulings from the completion session
+## D. Post-M7 (complete) rulings
 
-All ten acceptance criteria are met, AC7.1/7.3/7.8/7.9 on real testnet with on-chain hashes
-recorded in the M7 report. `packages/mcp`, the two example integrations, the role-based guide,
-`docs/discovery/*`, `docs/mcp/*` and ADR-0013 are built. Binding findings below.
+M7 complete on `feat/m7-catalog-discovery`; all ten ACs met. Testnet hashes recorded for AC7.1/7.3
+(`e3270f26…`) and AC7.8 (`06b1de09…`). Binding items below.
 
-### C.6.1 `maxTotalSpend` was inert — a security control that never fired (binding)
+### D.1 Two latent defects — the "tested only on the branch production never takes" pattern
 
-`[FACT — installed declarations + observed on testnet]` **`SettleResponse.amount` is optional**,
-documented upstream as present only "for schemes like `upto` where settlement amount may differ
-from the authorized maximum". The `exact` scheme does not populate it. `@movoframework/client`
-recorded spend *only* from that field, so on every real Stellar settlement it took the absent
-branch: `spent()` stayed at `"0"`, and **the cumulative cap could not fire**. The per-request cap
-held throughout, which is why nothing surfaced it — this shipped in M4 and survived M5 and M6.
+Both found by running the real path, not by the suite that nominally covered them. Recorded as the
+defining instances of the pattern for M8's benefit.
 
-**RULING.** A settlement reporting no amount is counted against the amount the policy *authorised*
-(`Budget.recordAuthorized`), which under `exact` is the settled amount by definition of the scheme.
+- **`maxTotalSpend` was inert across M4–M6.** `SettleResponse.amount` is optional and `exact` never
+  populates it, so `budget.record` never ran on a real Stellar settlement — `spent()` stayed `"0"`
+  and the cumulative cap could not fire. Invisible because every unit test drove `record()` directly
+  with an amount, exercising the branch production never takes. Fixed via `recordAuthorized()` with a
+  regression test. **Lesson for M8:** a budget/limit test must drive the code path a real settlement
+  produces (amount absent), not a synthetic one (amount supplied).
+- **`$ref` check ran after the schema validator**, handing an attacker-supplied `$ref` URL to a
+  resolver on the settle path and reporting `listing_info_invalid` instead of its own reason —
+  AC7.5's six distinct reasons silently collapsed to five on the real ingest path. Fixed by
+  reordering. **Lesson:** assert on the *distinct reason per attack*, not merely on rejection; a
+  reason-collapse is invisible to a test that checks only that rejection occurred.
 
-**Lesson, and it is §A.2 rule 4 in a new place.** The defect was invisible to typecheck, to review
-and to every unit test, because the unit tests drove `record()` directly with an amount and
-therefore never exercised the branch production always took. It was found by an e2e that asserted
-on the **budget** after a confirmed on-chain settlement rather than on the response. *When a
-control's input comes from an optional upstream field, test the branch where the field is absent —
-that is the branch production runs.*
+Both reinforce the standing rule: typechecking and passing are not running. The Postgres AC7.10
+run found a third instance — `"extensions ? ?"` ate the jsonb operator, a syntax error on every
+filtered query in code that typechecked and had never executed (fixed to `jsonb_exists`).
 
-### C.6.2 Check order is part of an integrity control (binding, extends C.1)
+### D.2 `readCatalogOutcome` is `unknown` through a resource server — upstream gap, no Movo change
 
-`checkSchemaRefs` now runs **before** `checkDeclaration`. Two independent reasons:
+`[FACT]` Upstream logs `EXTENSION-RESPONSES` but never forwards it to the buyer through an x402
+resource server, so `readCatalogOutcome` resolves to `unknown` on that path by construction. This
+is an upstream limitation, not a Movo defect; the decoder is correct and remains justified for
+paths that do carry the header. Logged as an upstream contribution (`docs/discovery/upstream-
+contributions.md`). No change warranted.
 
-- **Security.** `validateDiscoveryExtension` resolves the declared schema to validate `info`
-  against it, so running it first hands an attacker-supplied `$ref` URL to a resolver on the settle
-  path. The control that exists to prevent that must precede it.
-- **Diagnostics.** With the checks reversed, the external-`$ref` attack returned
-  `listing_info_invalid` — the validator's generic "cannot resolve reference". AC7.5's six
-  *distinct* reasons held when the controls were called directly and silently collapsed to five on
-  the path a real settlement takes. Found by routing the adversarial cases through
-  `ingestSettlement` rather than through the control functions, which is now how they are tested.
+### D.3 Carried into M8 — the release/hardening milestone
 
-### C.6.3 The buyer never receives `EXTENSION-RESPONSES` (upstream gap, no Movo change)
+| Item | Status | Note |
+|---|---|---|
+| Pubnet AC6.2 / AC6.4-pubnet | **UNVERIFIED — committed RFP deliverable** | funds, KMS/HSM key story, RPC provider, Audit Bank review. Blocks the mainnet production tag; not deferrable past v0.1.0 |
+| §16a Audit Bank review | **not started** | external lead time — start now regardless of M8 progress |
+| Upstream e2e on Linux | not re-run | retires M6's two disclosed harness accommodations (`shell: win32`, throwaway EVM/SVM keys); required for a caveat-free RFP conformance run |
+| Guide → Stellar Developer Docs | in-repo complete; not submitted | tracked with a done-state in `docs/discovery/upstream-contributions.md` |
+| Stock-client conformance suite (§1.16 layer 4) | **the RFP's literal acceptance test** | both networks, settled hash per network per scheme, non-null reason on every rejection. M8's headline deliverable, not cleanup |
 
-`[FACT — upstream source]` `@x402/core`'s resource server reads the facilitator's
-`EXTENSION-RESPONSES` header and **logs** it (`logExtensionResponsesHeader`); it does not forward
-it to the buyer. So `readCatalogOutcome` returns `unknown` through any x402 resource server today,
-regardless of what the facilitator reported. This vindicates §A's ruling that `unknown` be
-load-bearing rather than collapsed. **No Movo change is warranted**; forwarding the header is
-logged as an upstream contribution alongside the missing public decoder.
+### D.4 Environment (not a spec matter)
 
-### C.6.4 AC7.10 found a Postgres defect that could not have run
-
-The Postgres `list()` built its `extensions` filter as `"extensions ? ?"` and rewrote the *first*
-`?` into a placeholder — rewriting the jsonb operator and leaving the placeholder literal, so every
-filtered query was a syntax error. It typechecked, it read correctly, and it had never been
-executed. Corrected to `jsonb_exists`. **This is the whole argument for AC7.10 being "the same
-suite against both" rather than "a Postgres store exists".**
-
-### C.6.5 Two repository gates had blind spots, now closed
-
-- `check-project-references` scanned `packages` and `examples` but not `apps`, so a legitimate
-  reference to `apps/facilitator` was reported as dangling. `apps` added.
-- `check-docs-codeblocks` resolved only the core package, so 35 of 48 documentation snippets
-  carried `no-check` and the gate was checking a minority of the examples readers copy. All
-  workspace packages now resolve; 15 blocks compile.
-
-### C.6.6 Carried forward to M8
-
-| Item | Status |
-|---|---|
-| AC6.2 / AC6.4 pubnet | **UNVERIFIED** — unchanged from §B.3, still a committed RFP deliverable |
-| Role-based guide contributed to Stellar Developer Docs (§25.16) | **NOT SUBMITTED** — in-repo guide complete; external deliverable tracked in `docs/discovery/upstream-contributions.md` |
-| Upstream contributions: public `EXTENSION-RESPONSES` decoder; forwarding the header to the buyer | **NOT SUBMITTED** — tracked in the same file |
-| Re-run upstream e2e on a Linux runner to retire the two disclosed harness accommodations | **NOT DONE** — carried from §B.3 |
-| `upto` scheme, on-chain registry | Out of scope by decision; extension points open (ADR-0013) |
-| Build-host disk | See §C.5 |
+Disk at 143 MB free — the MiniLM eval weights consumed most of the prior 2 GB. **Clear before M8**;
+a full disk with an uncommitted tree is a work-loss risk (it already interrupted the M7 catalog
+session). `.env` line 35 reads `MOVO_E2E= 1` (stray space) — the reason the e2e gate stayed off;
+fix the file rather than passing it explicitly each run. A `movo-catalog-pg` container remains on
+port 5434 for AC7.10 re-runs (`docker rm -f movo-catalog-pg` to remove).
 
 ---
 

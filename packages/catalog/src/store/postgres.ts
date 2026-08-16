@@ -229,7 +229,11 @@ export class PostgresCatalogStore implements CatalogStore {
     if (filters.payTo !== undefined) add("pay_to = ?", filters.payTo);
     if (filters.network !== undefined) add("network = ?", filters.network);
     if (filters.scheme !== undefined) add("scheme = ?", filters.scheme);
-    if (filters.extensions !== undefined) add("extensions ? ?", filters.extensions);
+    // `jsonb_exists`, not the `?` operator. `add` rewrites the first `?` in its argument into a
+    // `$n` placeholder, so `"extensions ? ?"` had the *operator* rewritten and the placeholder
+    // left as a literal — producing `extensions $5 ?`, a syntax error on every filtered query.
+    // AC7.10 exists to catch exactly this: the statement typechecked and was never executed.
+    if (filters.extensions !== undefined) add("jsonb_exists(extensions, ?)", filters.extensions);
 
     const clause = conditions.length === 0 ? "" : `WHERE ${conditions.join(" AND ")}`;
     const limit = clampLimit(filters.limit);

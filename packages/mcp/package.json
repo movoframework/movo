@@ -1,0 +1,31 @@
+{
+  "name": "@movoframework/mcp",
+  "version": "0.0.0",
+  "description": "An MCP discovery server over the Stellar Bazaar catalog: bazaar.search, bazaar.get and a budget-capped bazaar.paidCall",
+  "license": "Apache-2.0",
+  "type": "module",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=22"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.30.0",
+    "@movoframework/catalog": "workspace:*",
+    "@movoframework/client": "workspace:*",
+    "@movoframework/core": "workspace:*",
+    "zod": "3.25.76"
+  }
+}

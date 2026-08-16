@@ -44,6 +44,18 @@ const CANDIDATE_DEPTH = 100;
 /** Query length cap — a resource-exhaustion control, per §7.3. */
 export const MAX_QUERY_LENGTH = 512;
 
+/** A ranked page of stored listings — {@link Catalog.searchListings}'s result. */
+export interface SearchListingsPage {
+  /** The listings, in rank order. */
+  readonly listings: readonly CatalogListing[];
+  /** True when a retriever was degraded or the results were truncated. */
+  readonly partialResults: boolean;
+  /** The page size actually applied, after clamping. */
+  readonly limit: number;
+  /** Opaque cursor for the next page, or null at the end. */
+  readonly cursor: string | null;
+}
+
 /** Options for {@link createCatalog}. */
 export interface CatalogOptions {
   readonly store: CatalogStore;
@@ -66,6 +78,20 @@ export interface Catalog {
   list(params: ListDiscoveryResourcesParams): Promise<DiscoveryResourcesResponse>;
   /** `GET /discovery/search`. */
   search(params: SearchDiscoveryResourcesParams): Promise<SearchDiscoveryResourcesResponse>;
+  /**
+   * The same search, returning **stored** listings rather than the wire shape.
+   *
+   * `DiscoveryResource` deliberately carries no `id` — it is a Movo storage key and no other
+   * facilitator has one, so putting it on the wire would be the walled-garden field §25.11 warns
+   * about. But an agent that has searched needs a handle it can pass back to `bazaar.get` and
+   * `bazaar.paidCall`.
+   *
+   * The alternative was for `@movoframework/mcp` to re-derive the key from each result's URL.
+   * That is a second copy of ingest's keying rule, and §A.2 rule 2 exists because of exactly
+   * that shape: two copies of one identifier drift, and the drift is silent — a lookup that
+   * quietly misses looks identical to a listing that is not there.
+   */
+  searchListings(params: SearchDiscoveryResourcesParams): Promise<SearchListingsPage>;
   /** Fetch one listing by its derived key. Backs `bazaar.get`. */
   get(id: string): Promise<CatalogListing | undefined>;
   /** Report a failed call against a listing, feeding failure-rate demotion. */
@@ -174,87 +200,104 @@ export function createCatalog(options: CatalogOptions): Catalog {
     },
 
     search: async (params) => {
-      const query = (params.query ?? "").slice(0, MAX_QUERY_LENGTH).trim();
-      const limit = clampLimit(params.limit);
-
-      // Filters apply before ranking: a search restricted to one network must not spend its
-      // result slots on listings from another and then drop them.
-      const filtered = await store.list({
-        ...(params.type === undefined ? {} : { type: params.type }),
-        ...(params.payTo === undefined ? {} : { payTo: params.payTo }),
-        ...(params.scheme === undefined ? {} : { scheme: params.scheme }),
-        ...(params.network === undefined ? {} : { network: params.network }),
-        ...(params.extensions === undefined ? {} : { extensions: params.extensions }),
-        limit: Number.MAX_SAFE_INTEGER,
-        offset: 0,
-      });
-      const eligible = new Set(filtered.items.map((listing) => listing.id));
-
-      if (query === "" || eligible.size === 0) {
-        const cursorPage = decodeCursor(params.cursor);
-        const items = filtered.items.slice(cursorPage, cursorPage + limit);
-        return {
-          x402Version: 2,
-          resources: items.map(toDiscoveryResource),
-          partialResults: false,
-          pagination: {
-            limit,
-            cursor: encodeCursor(cursorPage + limit, filtered.items.length),
-          },
-        };
-      }
-
-      await ensureIndexes();
-
-      const lists: ScoredId[][] = [];
-      const lexicalHits = lexical
-        .search(query, CANDIDATE_DEPTH)
-        .filter((candidate) => eligible.has(candidate.id));
-      lists.push(lexicalHits);
-
-      let semanticDegraded = true;
-      const model = await resolveEmbedder();
-      if (model !== undefined) {
-        try {
-          const [queryVector] = await model.embed([query]);
-          if (queryVector !== undefined) {
-            lists.push(
-              vectors
-                .search(queryVector, CANDIDATE_DEPTH)
-                .filter((candidate) => eligible.has(candidate.id)),
-            );
-            semanticDegraded = false;
-          }
-        } catch {
-          // A retriever that fails at query time degrades the result rather than failing it.
-          semanticDegraded = true;
-        }
-      }
-
-      const fused = reciprocalRankFusion(lists);
-
-      const signals = new Map<string, RankingSignals>(
-        filtered.items.map((listing) => [
-          listing.id,
-          { settlementCount: listing.settlementCount, failureCount: listing.failureCount },
-        ]),
-      );
-      const ranked = applySignals(fused, signals, weights);
-
-      const start = decodeCursor(params.cursor);
-      const page = ranked.slice(start, start + limit);
-      const listings = await store.byIds(page.map((candidate) => candidate.id));
-
+      const page = await searchListings(params);
       return {
         x402Version: 2,
-        resources: listings.map(toDiscoveryResource),
-        // True when a retriever was unavailable OR when results were truncated — both mean
-        // "there is more or better than what you are holding", which is what a caller needs.
-        partialResults: semanticDegraded || ranked.length > start + limit,
-        pagination: { limit, cursor: encodeCursor(start + limit, ranked.length) },
+        resources: page.listings.map(toDiscoveryResource),
+        partialResults: page.partialResults,
+        pagination: { limit: page.limit, cursor: page.cursor },
       };
     },
+
+    searchListings,
   };
+
+  /**
+   * The one ranking pass.
+   *
+   * `search` is a projection of this onto upstream's wire shape. Having the wire form call the
+   * stored form — rather than the two running the retrieval independently — is what makes
+   * `GET /discovery/search` and `bazaar.search` provably the same ranker. If they diverged, the
+   * published nDCG@10 would describe one of them and nobody would know which.
+   */
+  async function searchListings(
+    params: SearchDiscoveryResourcesParams,
+  ): Promise<SearchListingsPage> {
+    const query = (params.query ?? "").slice(0, MAX_QUERY_LENGTH).trim();
+    const limit = clampLimit(params.limit);
+
+    // Filters apply before ranking: a search restricted to one network must not spend its
+    // result slots on listings from another and then drop them.
+    const filtered = await store.list({
+      ...(params.type === undefined ? {} : { type: params.type }),
+      ...(params.payTo === undefined ? {} : { payTo: params.payTo }),
+      ...(params.scheme === undefined ? {} : { scheme: params.scheme }),
+      ...(params.network === undefined ? {} : { network: params.network }),
+      ...(params.extensions === undefined ? {} : { extensions: params.extensions }),
+      limit: Number.MAX_SAFE_INTEGER,
+      offset: 0,
+    });
+    const eligible = new Set(filtered.items.map((listing) => listing.id));
+
+    if (query === "" || eligible.size === 0) {
+      const cursorPage = decodeCursor(params.cursor);
+      return {
+        listings: filtered.items.slice(cursorPage, cursorPage + limit),
+        partialResults: false,
+        limit,
+        cursor: encodeCursor(cursorPage + limit, filtered.items.length),
+      };
+    }
+
+    await ensureIndexes();
+
+    const lists: ScoredId[][] = [];
+    const lexicalHits = lexical
+      .search(query, CANDIDATE_DEPTH)
+      .filter((candidate) => eligible.has(candidate.id));
+    lists.push(lexicalHits);
+
+    let semanticDegraded = true;
+    const model = await resolveEmbedder();
+    if (model !== undefined) {
+      try {
+        const [queryVector] = await model.embed([query]);
+        if (queryVector !== undefined) {
+          lists.push(
+            vectors
+              .search(queryVector, CANDIDATE_DEPTH)
+              .filter((candidate) => eligible.has(candidate.id)),
+          );
+          semanticDegraded = false;
+        }
+      } catch {
+        // A retriever that fails at query time degrades the result rather than failing it.
+        semanticDegraded = true;
+      }
+    }
+
+    const fused = reciprocalRankFusion(lists);
+
+    const signals = new Map<string, RankingSignals>(
+      filtered.items.map((listing) => [
+        listing.id,
+        { settlementCount: listing.settlementCount, failureCount: listing.failureCount },
+      ]),
+    );
+    const ranked = applySignals(fused, signals, weights);
+
+    const start = decodeCursor(params.cursor);
+    const page = ranked.slice(start, start + limit);
+
+    return {
+      listings: await store.byIds(page.map((candidate) => candidate.id)),
+      // True when a retriever was unavailable OR when results were truncated — both mean
+      // "there is more or better than what you are holding", which is what a caller needs.
+      partialResults: semanticDegraded || ranked.length > start + limit,
+      limit,
+      cursor: encodeCursor(start + limit, ranked.length),
+    };
+  }
 }
 
 /**

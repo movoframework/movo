@@ -31,6 +31,7 @@ export {
   createMovoClient,
   type MovoClient,
   type MovoClientOptions,
+  type PaidRoute,
   type PaymentStatus,
 } from "./client.js";
 

@@ -1,0 +1,27 @@
+{
+  "name": "@movoframework/example-mcp-agent",
+  "version": "0.0.0",
+  "private": true,
+  "description": "An agent that discovers and pays for an API over MCP, with no pre-baked integration",
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "start": "node --experimental-strip-types src/agent.ts"
+  },
+  "dependencies": {
+    "@hono/node-server": "2.1.1",
+    "@modelcontextprotocol/sdk": "1.30.0",
+    "@movoframework/catalog": "workspace:*",
+    "@movoframework/client": "workspace:*",
+    "@movoframework/core": "workspace:*",
+    "@movoframework/example-discoverable-api": "workspace:*",
+    "@movoframework/facilitator": "workspace:*",
+    "@movoframework/facilitator-service": "workspace:*",
+    "@movoframework/mcp": "workspace:*",
+    "@movoframework/server": "workspace:*",
+    "express": "5.2.1"
+  },
+  "devDependencies": {
+    "@types/express": "5.0.0"
+  }
+}

@@ -99,6 +99,51 @@ describe("AC4.4 — a budget below the offered amount refuses", () => {
     expect(budget.refusals.at(-1)?.reason).toContain("cumulative spend");
   });
 
+  it("counts a settlement that reports no amount, so maxTotalSpend is not inert", () => {
+    // THE REGRESSION THIS EXISTS FOR. `SettleResponse.amount` is optional and the `exact`
+    // scheme — every Stellar payment Movo makes — does not populate it. The client therefore
+    // took the "no amount reported" branch on every real settlement, `spent()` never moved, and
+    // maxTotalSpend was a cap that could not fire. It shipped that way through M4 and was found
+    // by an M7 e2e that asserted on the budget after a confirmed on-chain settlement.
+    const budget = createBudget({ maxTotalSpend: "25000" });
+
+    // The policy approving an offer is what makes the authorisation available to count.
+    expect(budget.policy(2, [offer({ amount: "10000" })])).toHaveLength(1);
+    expect(budget.recordAuthorized()).toBe("10000");
+    expect(budget.spent()).toBe("10000");
+    expect(budget.remaining()).toBe("15000");
+
+    expect(budget.policy(2, [offer({ amount: "10000" })])).toHaveLength(1);
+    expect(budget.recordAuthorized()).toBe("10000");
+    expect(budget.spent()).toBe("20000");
+
+    // And the cumulative cap now actually fires.
+    expect(budget.policy(2, [offer({ amount: "10000" })])).toEqual([]);
+    expect(budget.refusals.at(-1)?.code).toBe("MOVO_E_BUDGET_EXCEEDED");
+  });
+
+  it("counts each settlement once, whether or not an amount was reported", () => {
+    const budget = createBudget();
+
+    // One approval, then a settlement that DID report its amount. The authorisation must be
+    // consumed by it, or a later amount-less settlement would count the same payment twice.
+    expect(budget.policy(2, [offer({ amount: "10000" })])).toHaveLength(1);
+    budget.record(offer({ amount: "10000" }));
+    expect(budget.spent()).toBe("10000");
+
+    expect(budget.recordAuthorized()).toBeUndefined();
+    expect(budget.spent()).toBe("10000");
+  });
+
+  it("counts nothing for a settlement no approval preceded", () => {
+    // Defensive: reaching settlement without the policy having approved anything means
+    // something bypassed the gate. Inventing a number here would misreport spend either way,
+    // so the accountant reports that it counted nothing.
+    const budget = createBudget();
+    expect(budget.recordAuthorized()).toBeUndefined();
+    expect(budget.spent()).toBe("0");
+  });
+
   it("resets", () => {
     const budget = createBudget({ maxTotalSpend: "10000" });
     budget.record(offer({ amount: "10000" }));

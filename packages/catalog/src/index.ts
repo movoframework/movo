@@ -21,6 +21,7 @@ export {
   decodeCursor,
   encodeCursor,
   MAX_QUERY_LENGTH,
+  type SearchListingsPage,
 } from "./catalog.js";
 export {
   DEFAULT_DUST_THRESHOLD_ATOMIC,

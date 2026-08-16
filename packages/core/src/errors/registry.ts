@@ -85,7 +85,13 @@ export type MovoErrorCode =
   | "MOVO_W_X402_PIN_DRIFT"
   | "MOVO_E_FACILITATOR_PUBNET_REFUSED"
   | "MOVO_E_FACILITATOR_CONFIG_INVALID"
-  | "MOVO_E_FACILITATOR_SIGNER_UNAVAILABLE";
+  | "MOVO_E_FACILITATOR_SIGNER_UNAVAILABLE"
+  | "MOVO_E_MCP_BUDGET_REQUIRED"
+  | "MOVO_E_MCP_INPUT_INVALID"
+  | "MOVO_E_MCP_LISTING_NOT_FOUND"
+  | "MOVO_E_MCP_NO_ACCEPTABLE_OFFER"
+  | "MOVO_E_MCP_CALL_FAILED"
+  | "MOVO_E_MCP_SETTLE_FAILED";
 
 /** The registry itself. */
 export const MOVO_ERROR_REGISTRY: { readonly [K in MovoErrorCode]: ErrorRegistryEntry } = {
@@ -319,6 +325,53 @@ export const MOVO_ERROR_REGISTRY: { readonly [K in MovoErrorCode]: ErrorRegistry
     severity: "error",
     meaning: "No sponsoring signer was available to settle a payment.",
     fix: "Check /ready. Either every signer in the pool is below its XLM floor — top them up, see docs/operating-a-facilitator/runbook.md — or the requested network has no pool configured at all, which is a configuration error rather than an operational one.",
+  },
+
+  // The MCP discovery server's agent-facing codes. They are here, in the one registry, rather
+  // than in a `MCP_E_*` namespace of their own — §A's ruling against `BAZAAR_E_*` applies for
+  // the same reason: a code prefix that names the package a failure came from tells the reader
+  // where the throw is, which they did not ask, instead of what went wrong, which they did.
+  //
+  // A budget refusal is deliberately NOT among them. It reports the buyer-side
+  // `MOVO_E_BUDGET_*` code verbatim, because "the call was refused" is less useful to an agent
+  // than "the offer exceeded the per-request cap", and wrapping the real code in an MCP-shaped
+  // one would lose exactly the distinction the agent needs to decide what to do next.
+  MOVO_E_MCP_BUDGET_REQUIRED: {
+    code: "MOVO_E_MCP_BUDGET_REQUIRED",
+    severity: "error",
+    meaning: "An MCP discovery server was constructed without a budget for bazaar.paidCall.",
+    fix: "Pass buyer.budget to createMcpDiscoveryServer. bazaar.paidCall hands an autonomous agent the ability to spend from a wallet, and a spend cap is the only thing standing between a bad plan and an empty account — so it is required rather than defaulted. Set maxAmountPerRequest and maxTotalSpend, and allowedPayTo if you know who you intend to pay.",
+  },
+  MOVO_E_MCP_INPUT_INVALID: {
+    code: "MOVO_E_MCP_INPUT_INVALID",
+    severity: "error",
+    meaning: "An MCP tool was called with arguments it cannot act on.",
+    fix: "Read the reason — it names the field. The usual causes are supplying neither `id` nor `url` to bazaar.paidCall, supplying both, or a url that is not absolute http(s).",
+  },
+  MOVO_E_MCP_LISTING_NOT_FOUND: {
+    code: "MOVO_E_MCP_LISTING_NOT_FOUND",
+    severity: "error",
+    meaning: "No catalog listing matches the identifier bazaar.get or bazaar.paidCall was given.",
+    fix: "Use an `id` returned by bazaar.search, or the exact (resource, toolName) tuple an MCP listing was catalogued under. A catalog only holds resources that have been paid for at least once through this facilitator, so an endpoint that has never settled here is absent rather than hidden.",
+  },
+  MOVO_E_MCP_NO_ACCEPTABLE_OFFER: {
+    code: "MOVO_E_MCP_NO_ACCEPTABLE_OFFER",
+    severity: "error",
+    meaning:
+      "A paid call ended at 402: the server's offers were not refused by the budget, but none could be paid.",
+    fix: "The server advertised no offer this buyer can settle — usually a different network or a scheme this client has no signer for. Check the resource's `accepts` in the catalog listing against the network the client was constructed with. No payment was created.",
+  },
+  MOVO_E_MCP_CALL_FAILED: {
+    code: "MOVO_E_MCP_CALL_FAILED",
+    severity: "error",
+    meaning: "A paid call reached the resource but the resource did not return a success status.",
+    fix: "Read the reason for the status and body. A paid route that returns 4xx costs the buyer nothing — upstream cancels settlement on status >= 400 — so this is a failed call rather than a lost payment.",
+  },
+  MOVO_E_MCP_SETTLE_FAILED: {
+    code: "MOVO_E_MCP_SETTLE_FAILED",
+    severity: "error",
+    meaning: "A payment was created and submitted for a paid call, but settlement did not succeed.",
+    fix: "Read the reason for the facilitator's own text. The buyer's output is withheld when settlement fails, so there is nothing to retry against — re-issue the call. Repeated failures against one resource are worth reporting with bazaar.get's listing id.",
   },
 };
 

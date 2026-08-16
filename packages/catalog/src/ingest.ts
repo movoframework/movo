@@ -159,11 +159,24 @@ export async function ingestSettlement(
     };
   }
 
-  const declaration = checkDeclaration(bazaarExtension);
-  if (!declaration.ok) return rejected(declaration.refusal);
-
+  // `$ref` first, and the order is load-bearing in two ways.
+  //
+  // Security: `validateDiscoveryExtension` resolves the declared schema in order to validate
+  // `info` against it. Handing it a schema carrying `$ref: "https://evil.example.com/…"` asks a
+  // validator to dereference an attacker-supplied URL from the settle path. The reference check
+  // is the control that exists to prevent exactly that, so it must run before the validator, not
+  // after it.
+  //
+  // Diagnostics: with the checks the other way round, the external-`$ref` attack came back as
+  // `listing_info_invalid` — the validator failed to resolve the remote reference and reported
+  // that generic reason — so AC7.5's six *distinct* reasons held when the controls were called
+  // directly and quietly collapsed to five on the path a real settlement takes. Found by running
+  // the adversarial cases through `ingestSettlement` rather than through the control functions.
   const refs = checkSchemaRefs((bazaarExtension as { schema?: unknown }).schema);
   if (!refs.ok) return rejected(refs.refusal);
+
+  const declaration = checkDeclaration(bazaarExtension);
+  if (!declaration.ok) return rejected(declaration.refusal);
 
   // Escalate the two soft-drops, on the raw values, before extraction consumes them.
   const rawTemplate = (bazaarExtension as { routeTemplate?: unknown }).routeTemplate;

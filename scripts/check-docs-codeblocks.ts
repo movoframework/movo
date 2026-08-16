@@ -52,6 +52,31 @@ const REPO_ROOT: string = resolve(fileURLToPath(import.meta.url), "..", "..");
 const EXCLUDED_DIRECTORIES: readonly string[] = ["context", "reference"];
 
 /**
+ * Packages a documentation snippet may import and still be compiled.
+ *
+ * For a long time this was `core` alone, which meant a snippet importing anything else had to
+ * carry `no-check` — and most of the documentation's snippets import something else. The gate
+ * was therefore checking a minority of the examples a reader actually copies, and the M7
+ * discovery and MCP pages would have been entirely unchecked, which is the state this gate
+ * exists to prevent.
+ *
+ * Every entry is a package whose public surface is `packages/<name>/src/index.ts`. `no-check`
+ * remains for snippets that are genuinely illustrative — a shell of a config, an ellipsis — and
+ * `expect-error` for the ones that must fail.
+ */
+const RESOLVABLE_PACKAGES: readonly string[] = [
+  "core",
+  "server",
+  "stellar",
+  "bazaar",
+  "client",
+  "testing",
+  "catalog",
+  "facilitator",
+  "mcp",
+];
+
+/**
  * Individual documents excluded from the sweep.
  *
  * `SPIKE_REPORT.md` is an evidence record, not instruction. Its TypeScript fences are verbatim
@@ -185,14 +210,24 @@ export function compileBlocks(blocks: readonly CodeBlock[]): BlockResult[] {
               // No `baseUrl`: TypeScript 7 removed it. Paths carry absolute targets instead.
               // The key is derived from MOVO_SCOPE rather than written out — a gate that spells
               // the scope itself is the exact failure `packages/core/src/identity.ts` documents.
-              paths: {
-                [movoPackageName("core")]: [
-                  join(REPO_ROOT, "packages", "core", "src", "index.ts").split(sep).join("/"),
-                ],
-              },
+              paths: Object.fromEntries(
+                RESOLVABLE_PACKAGES.map((name) => [
+                  movoPackageName(name),
+                  [join(REPO_ROOT, "packages", name, "src", "index.ts").split(sep).join("/")],
+                ]),
+              ),
               typeRoots: [join(REPO_ROOT, "node_modules", "@types").split(sep).join("/")],
             },
-            include: ["snippet.ts"],
+            // The ambient declarations a resolvable package's sources rely on come with it. The
+            // catalog package declares `better-sqlite3` itself, in `drivers.d.ts`, because the
+            // driver ships no types; without this the snippet project resolves the package and
+            // then fails on its dependency rather than on anything the snippet said.
+            include: [
+              "snippet.ts",
+              ...RESOLVABLE_PACKAGES.map((name) =>
+                join(REPO_ROOT, "packages", name, "src", "**", "*.d.ts").split(sep).join("/"),
+              ),
+            ],
           },
           null,
           2,

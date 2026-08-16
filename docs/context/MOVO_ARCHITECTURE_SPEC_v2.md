@@ -160,6 +160,148 @@ polish — it is half the facilitator deliverable and the trigger for the Audit 
 must be closed before v0.1.0's production tag, with its own human-gated prerequisites (funds, key
 management, RPC, audit) started early. The M6 testnet result does not discharge it.
 
+## C. Post-M7 (partial) rulings — catalog/discovery complete, MCP carried forward
+
+M7 stopped honestly at the catalog/search ↔ MCP seam. `packages/catalog`, discovery routes,
+ingest, the six integrity controls, and measured search quality are built and verified; the MCP
+track (`packages/mcp`, AC7.7–7.9), two example integrations, the role-based guide, and any testnet
+e2e are not built. Binding corrections below; the rest carries to the M7-completion session.
+
+### C.1 Integrity escalation must read the RAW extension, before extraction (binding, security)
+
+**FINDING (by test, not prediction).** Upstream **soft-drops** an invalid `routeTemplate`/`iconUrl`
+and returns `null` on invalid `info` — it does **not** throw. An integrity control that inspects
+only upstream's *output* therefore sees the malformed field silently dropped and reports **success
+on the attack** (the percent-encoded traversal and loopback-iconUrl cases). This is the plausible
+fake in its trust-boundary form: the control "passes" because upstream swallowed the evidence.
+
+**RULING.** Catalog-integrity escalation reads the **raw resource extension from the payload before
+upstream extraction**, compares it against what survives extraction, and escalates any field
+upstream soft-dropped to a distinct non-null rejection reason. Asserting on post-extraction output
+alone is insufficient and is a defect. §25's AC7.5 is amended: the six adversarial controls assert
+on **stored catalog state and the raw-vs-extracted delta**, never on upstream's post-extraction
+output alone. This mirrors §A's delegation rule (ex-007): consuming a delegate's result includes
+detecting what the delegate silently discarded.
+
+### C.2 Upstream API corrections — §25 (M7 spec) was written against names that changed
+
+`[FACT — installed declarations]`
+1. **`validateRouteTemplate` is `@deprecated`; use `isValidRouteTemplate`.** §25/§7.3 names the
+   deprecated function. Corrected to `isValidRouteTemplate`. Percent-decode still precedes the
+   traversal check.
+2. **Template dialect is Express `:param`, not OpenAPI `{param}`.** Any doc or test using `{param}`
+   in a routeTemplate is wrong.
+3. **The resource block lives on the `PaymentPayload`, not on `accepts`.** Ingest reads it from the
+   payload. (This is also why §C.1 is reachable — the raw block is on the payload to inspect.)
+
+### C.3 Confirmations from §B — both held
+
+- §B.1 non-custody: ingest derives the owner from `paymentRequirements.payTo` and **never reads the
+  settled transaction** — the `ingest.ts` header records that deriving ownership from the settled tx
+  would find the facilitator as source on every settlement (fee sponsorship) and refuse every happy-
+  path listing. Correct.
+- §B.2 mutex-correct writes: SQLite compare-and-write inside one `IMMEDIATE` transaction; Postgres
+  `ON CONFLICT … WHERE listings.pay_to = EXCLUDED.pay_to`. Tested with concurrent conflicting
+  writers asserting on stored state, not reason strings. Correct.
+
+### C.4 Carried into the M7-completion session
+
+| Item | Status | Note |
+|---|---|---|
+| MCP: `packages/mcp`, AC7.7–7.9 | **NOT BUILT** | three tools; `bazaar.paidCall` **must** refuse an over-budget call without producing a signature; structured I/O, machine-readable codes, non-null reason on every rejection |
+| AC7.10 Postgres store | **UNVERIFIED** | store written, never run against a real Postgres — run it |
+| AC7.1 / AC7.3 testnet e2e | integration-only | proven at integration; no testnet e2e run for M7 |
+| Two example integrations; role-based guide (+ upstream to Stellar Dev Docs); `docs/discovery/*`, `docs/mcp/*`; ADR-0013; changeset | **NOT BUILT** | M7 exit-gate items (§25.16) |
+
+The completion session resumes on `feat/m7-catalog-discovery` (WIP committed) — it does not rebuild
+the catalog/discovery half. Read that half first, then build MCP + examples + docs + e2e.
+
+### C.5 Environment note (not a spec matter)
+
+The build host filled to 0 bytes mid-session, blocking work; the agent reclaimed space by deleting
+the x402 scratch clone (evidence already in `CONFORMANCE.md`) and pruning Docker cache. Reclaim
+disk before the completion session — a full disk mid-run is a work-loss risk, especially with an
+uncommitted tree.
+
+**Still unresolved.** The completion session began with 2.0 GB free and ended with ~150 MB, most of
+it consumed by the MiniLM weights the search eval downloads. This must be dealt with before M8.
+
+## C.6 M7 complete — rulings from the completion session
+
+All ten acceptance criteria are met, AC7.1/7.3/7.8/7.9 on real testnet with on-chain hashes
+recorded in the M7 report. `packages/mcp`, the two example integrations, the role-based guide,
+`docs/discovery/*`, `docs/mcp/*` and ADR-0013 are built. Binding findings below.
+
+### C.6.1 `maxTotalSpend` was inert — a security control that never fired (binding)
+
+`[FACT — installed declarations + observed on testnet]` **`SettleResponse.amount` is optional**,
+documented upstream as present only "for schemes like `upto` where settlement amount may differ
+from the authorized maximum". The `exact` scheme does not populate it. `@movoframework/client`
+recorded spend *only* from that field, so on every real Stellar settlement it took the absent
+branch: `spent()` stayed at `"0"`, and **the cumulative cap could not fire**. The per-request cap
+held throughout, which is why nothing surfaced it — this shipped in M4 and survived M5 and M6.
+
+**RULING.** A settlement reporting no amount is counted against the amount the policy *authorised*
+(`Budget.recordAuthorized`), which under `exact` is the settled amount by definition of the scheme.
+
+**Lesson, and it is §A.2 rule 4 in a new place.** The defect was invisible to typecheck, to review
+and to every unit test, because the unit tests drove `record()` directly with an amount and
+therefore never exercised the branch production always took. It was found by an e2e that asserted
+on the **budget** after a confirmed on-chain settlement rather than on the response. *When a
+control's input comes from an optional upstream field, test the branch where the field is absent —
+that is the branch production runs.*
+
+### C.6.2 Check order is part of an integrity control (binding, extends C.1)
+
+`checkSchemaRefs` now runs **before** `checkDeclaration`. Two independent reasons:
+
+- **Security.** `validateDiscoveryExtension` resolves the declared schema to validate `info`
+  against it, so running it first hands an attacker-supplied `$ref` URL to a resolver on the settle
+  path. The control that exists to prevent that must precede it.
+- **Diagnostics.** With the checks reversed, the external-`$ref` attack returned
+  `listing_info_invalid` — the validator's generic "cannot resolve reference". AC7.5's six
+  *distinct* reasons held when the controls were called directly and silently collapsed to five on
+  the path a real settlement takes. Found by routing the adversarial cases through
+  `ingestSettlement` rather than through the control functions, which is now how they are tested.
+
+### C.6.3 The buyer never receives `EXTENSION-RESPONSES` (upstream gap, no Movo change)
+
+`[FACT — upstream source]` `@x402/core`'s resource server reads the facilitator's
+`EXTENSION-RESPONSES` header and **logs** it (`logExtensionResponsesHeader`); it does not forward
+it to the buyer. So `readCatalogOutcome` returns `unknown` through any x402 resource server today,
+regardless of what the facilitator reported. This vindicates §A's ruling that `unknown` be
+load-bearing rather than collapsed. **No Movo change is warranted**; forwarding the header is
+logged as an upstream contribution alongside the missing public decoder.
+
+### C.6.4 AC7.10 found a Postgres defect that could not have run
+
+The Postgres `list()` built its `extensions` filter as `"extensions ? ?"` and rewrote the *first*
+`?` into a placeholder — rewriting the jsonb operator and leaving the placeholder literal, so every
+filtered query was a syntax error. It typechecked, it read correctly, and it had never been
+executed. Corrected to `jsonb_exists`. **This is the whole argument for AC7.10 being "the same
+suite against both" rather than "a Postgres store exists".**
+
+### C.6.5 Two repository gates had blind spots, now closed
+
+- `check-project-references` scanned `packages` and `examples` but not `apps`, so a legitimate
+  reference to `apps/facilitator` was reported as dangling. `apps` added.
+- `check-docs-codeblocks` resolved only the core package, so 35 of 48 documentation snippets
+  carried `no-check` and the gate was checking a minority of the examples readers copy. All
+  workspace packages now resolve; 15 blocks compile.
+
+### C.6.6 Carried forward to M8
+
+| Item | Status |
+|---|---|
+| AC6.2 / AC6.4 pubnet | **UNVERIFIED** — unchanged from §B.3, still a committed RFP deliverable |
+| Role-based guide contributed to Stellar Developer Docs (§25.16) | **NOT SUBMITTED** — in-repo guide complete; external deliverable tracked in `docs/discovery/upstream-contributions.md` |
+| Upstream contributions: public `EXTENSION-RESPONSES` decoder; forwarding the header to the buyer | **NOT SUBMITTED** — tracked in the same file |
+| Re-run upstream e2e on a Linux runner to retire the two disclosed harness accommodations | **NOT DONE** — carried from §B.3 |
+| `upto` scheme, on-chain registry | Out of scope by decision; extension points open (ADR-0013) |
+| Build-host disk | See §C.5 |
+
+---
+
 ## 0. Executive Architecture Summary
 
 ### 0.1 The finding that reshapes the plan

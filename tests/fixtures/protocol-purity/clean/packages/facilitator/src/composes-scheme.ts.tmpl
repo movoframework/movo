@@ -1,0 +1,10 @@
+// CLEAN FIXTURE: the lawful shape — construct upstream's scheme, register it, call it.
+// Names the prohibited concepts in prose without performing any of them.
+import { FacilitatorExactStellarScheme, x402Facilitator } from "__MOVO_SCOPE__/core/facilitator";
+
+export function compose(signers: never[]): x402Facilitator {
+  return new x402Facilitator().register(
+    "stellar:testnet",
+    new FacilitatorExactStellarScheme(signers),
+  );
+}

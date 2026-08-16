@@ -1,0 +1,27 @@
+{
+  "name": "@movoframework/facilitator",
+  "version": "0.0.0",
+  "description": "The service tier of a self-hostable Stellar x402 facilitator: signer pool, channel accounts, metering, rate limiting and readiness over @x402/stellar",
+  "license": "Apache-2.0",
+  "type": "module",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=22"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "dependencies": {
+    "@movoframework/core": "workspace:*"
+  }
+}

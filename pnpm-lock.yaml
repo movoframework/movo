@@ -14,6 +14,9 @@ importers:
       '@changesets/cli':
         specifier: 2.31.1
         version: 2.31.1(@types/node@24.10.1)
+      '@hono/node-server':
+        specifier: 2.1.1
+        version: 2.1.1(hono@4.13.2)
       '@movoframework/bazaar':
         specifier: workspace:*
         version: link:packages/bazaar
@@ -26,6 +29,9 @@ importers:
       '@movoframework/core':
         specifier: workspace:*
         version: link:packages/core
+      '@movoframework/facilitator':
+        specifier: workspace:*
+        version: link:packages/facilitator
       '@movoframework/server':
         specifier: workspace:*
         version: link:packages/server
@@ -65,6 +71,9 @@ importers:
       express:
         specifier: 5.2.1
         version: 5.2.1
+      hono:
+        specifier: 4.13.2
+        version: 4.13.2
       typescript:
         specifier: 7.0.2
         version: 7.0.2
@@ -74,6 +83,21 @@ importers:
       zod:
         specifier: 3.25.76
         version: 3.25.76
+
+  apps/facilitator:
+    dependencies:
+      '@hono/node-server':
+        specifier: 2.1.1
+        version: 2.1.1(hono@4.13.2)
+      '@movoframework/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@movoframework/facilitator':
+        specifier: workspace:*
+        version: link:../../packages/facilitator
+      hono:
+        specifier: 4.13.2
+        version: 4.13.2
 
   examples/agent-buyer:
     dependencies:
@@ -273,6 +297,12 @@ importers:
         specifier: 4.1.10
         version: 4.1.10(@types/node@24.10.1)(@vitest/coverage-v8@4.1.10)(vite@8.2.1(@types/node@24.10.1))
 
+  packages/facilitator:
+    dependencies:
+      '@movoframework/core':
+        specifier: workspace:*
+        version: link:../core
+
   packages/server:
     dependencies:
       '@movoframework/bazaar':
@@ -451,6 +481,12 @@ packages:
 
   '@changesets/write@0.4.0':
     resolution: {integrity: sha512-CdTLvIOPiCNuH71pyDu3rA+Q0n65cmAbXnwWH84rKGiFumFzkmHNT8KHTMEchcxN+Kl8I54xGUhJ7l3E7X396Q==}
+
+  '@hono/node-server@2.1.1':
+    resolution: {integrity: sha512-ELuehkj5VCBdgEw9zs+ivkKwyzzUCSQuE96YmiPvn1ECBoZCczbFXJLeEGMTYjphP6gydh4pHMqEYPVMYUVgQg==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      hono: ^4
 
   '@inquirer/external-editor@1.0.3':
     resolution: {integrity: sha512-RWbSrDiYmO4LbejWY7ttpxczuwQyZLBUyygsA9Nsv95hpzUWwnNTVQmAq3xuh7vNwCp07UTmE5i11XAEExx4RA==}
@@ -1206,6 +1242,10 @@ packages:
   hasown@2.0.4:
     resolution: {integrity: sha512-T2UbfbBEF32wiepXIsMlTW9+dDYC6wMh/t/vYA4tuOMKqWz/n3vr1NFSxQiyP+zk2mXsoMA/i/7qV6LKut1t1A==}
     engines: {node: '>= 0.4'}
+
+  hono@4.13.2:
+    resolution: {integrity: sha512-JydRilDRkYBQMt9qR9U92mXxmbGqsqSn/IKOrh4e7/gEbn+0zSr8igTu0obwJoNGN4sez28DIql7FBHWydoJpA==}
+    engines: {node: '>=16.9.0'}
 
   html-escaper@2.0.2:
     resolution: {integrity: sha512-H2iMtd0I4Mt5eYiapRdIDjp+XzelXQ0tFE4JS7YFwFevXXMmOp9myNrUvCg0D6ws8iqkRPBfKHgbwig1SmlLfg==}
@@ -2062,6 +2102,10 @@ snapshots:
       human-id: 4.2.0
       prettier: 2.8.8
 
+  '@hono/node-server@2.1.1(hono@4.13.2)':
+    dependencies:
+      hono: 4.13.2
+
   '@inquirer/external-editor@1.0.3(@types/node@24.10.1)':
     dependencies:
       chardet: 2.2.0
@@ -2780,6 +2824,8 @@ snapshots:
   hasown@2.0.4:
     dependencies:
       function-bind: 1.1.2
+
+  hono@4.13.2: {}
 
   html-escaper@2.0.2: {}
 

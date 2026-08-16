@@ -1,18 +1,17 @@
 # Movo — standing rules for Claude Code
 
-## Read first, in this order — later amendments supersede earlier ones and the spec
+## Read first, in this order
 
-1. `docs/context/MOVO_FINAL_ARCHITECTURE_SPEC.md`
-2. `docs/context/SPEC_AMENDMENT_001.md`
-3. `docs/context/SPEC_AMENDMENT_002.md`
-4. `docs/context/SPEC_AMENDMENT_003.md`
-5. `docs/context/SPEC_AMENDMENT_004.md`
-6. `docs/context/SPEC_AMENDMENT_005.md`
-7. `docs/context/SPEC_AMENDMENT_006.md`
-8. `docs/context/SPEC_AMENDMENT_007.md`
-9. `docs/context/SPEC_AMENDMENT_008.md`
-10. `docs/SPIKE_REPORT.md` — empirical findings from M0; binding
-11. `docs/CONFORMANCE.md` — Gate 1 evidence; binding
+1. `docs/context/MOVO_ARCHITECTURE_SPEC_v2.md` — consolidated spec; **§A is the
+   Amendment Register (001–008 folded in) — read it first.** §A is normative and
+   wins over any section body it conflicts with.
+2. `docs/SPIKE_REPORT.md` — empirical findings from M0; binding
+3. `docs/CONFORMANCE.md` — Gate 1 evidence; binding
+
+The eight `SPEC_AMENDMENT_00N.md` files are archived under `docs/context/archive/`.
+They are the provenance trail — the incident narratives and rationale behind each
+ruling — and are superseded by v2 §A for all implementation purposes. Read them only
+to understand *why* a decision was made, never to determine *what* it is.
 
 ## Rules
 
@@ -22,7 +21,7 @@
 - Only `packages/core/src/protocol/**` may import `@x402/*` — except
   `tests/e2e/**` and `tests/conformance/**`, which are exempt because they
   act as a genuine third-party buyer using an unmodified upstream client
-  (amendment 004 §5).
+  (v2 §A, ex-amendment 004 §5).
 - Never fake a settlement, a transaction hash, or a conformance result.
   Report UNVERIFIED instead.
 - Verify upstream APIs by reading `node_modules/@x402/*/dist/**/*.d.mts`,
@@ -40,6 +39,14 @@
   typechecks or passes without doing the real thing is a more dangerous
   defect than a missing implementation, because nothing signals its
   absence.
+- Delegation that discards its delegate's result is not delegation. When
+  Movo code calls an upstream function, it must consume the return value,
+  not wrap the call in a try/catch that swallows it. A discarded return is
+  a reimplementation wearing a delegation costume.
+- A correct answer to a question nobody asked is still scope creep. Before
+  building a derivation or check, confirm the rest of the system actually
+  asks that question in the resource model as it exists — not in some
+  other design it might have had.
 - Before implementing anything that parses or serialises HTTP
   request/response bodies for `verify`, `settle`, or `supported`: that is
   the facilitator service regardless of which package it lives in or how

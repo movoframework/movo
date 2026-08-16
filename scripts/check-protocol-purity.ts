@@ -94,6 +94,15 @@ export const SCOPES: readonly {
   { directory: join("packages", "server", "src"), rules: COMPOSITION_RULES },
   { directory: join("packages", "stellar", "src"), rules: COMPOSITION_RULES },
   { directory: join("packages", "core", "src"), rules: CORE_RULES },
+  // AC6.10. The facilitator is the package with the strongest pull towards reimplementation:
+  // it is the component that verifies and settles, so "just parse this one XDR field" is a
+  // plausible-sounding thing to write in it, and the M6 prompt says in terms that finding
+  // yourself writing XDR parsing or signature checks means you are in the wrong layer. The
+  // same rules the mounting packages are held to therefore apply here, unweakened.
+  { directory: join("packages", "facilitator", "src"), rules: COMPOSITION_RULES },
+  // The service is the transport, and the transport has even less business touching a
+  // signature than the library does.
+  { directory: join("apps", "facilitator", "src"), rules: COMPOSITION_RULES },
 ];
 
 /** One rule violation. */

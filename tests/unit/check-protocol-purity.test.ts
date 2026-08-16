@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { join, resolve } from "node:path";
+import { join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PAYMENT_HEADERS } from "../../packages/core/src/protocol/index.ts";
@@ -7,6 +7,7 @@ import {
   COMPOSITION_RULES,
   CORE_RULES,
   checkProtocolPurity,
+  SCOPES,
 } from "../../scripts/check-protocol-purity.ts";
 import { materialiseFixture } from "../support/materialise-fixture.ts";
 
@@ -101,6 +102,45 @@ describe("proof of failure — AC2.7", () => {
     const result = runGate(violating.path);
     expect(result.status).toBe(1);
     expect(result.stderr).toContain("protocol purity FAILED");
+  });
+});
+
+describe("proof of failure — AC6.10, the facilitator track", () => {
+  it("scans packages/facilitator and apps/facilitator", () => {
+    // The gate's scopes are the gate. A facilitator that is not scanned passes AC6.10 by
+    // absence, which is the failure mode this assertion exists to make impossible.
+    const directories = SCOPES.map((scope) => scope.directory.split(sep).join("/"));
+    expect(directories).toContain("packages/facilitator/src");
+    expect(directories).toContain("apps/facilitator/src");
+  });
+
+  it("catches signature handling in packages/facilitator", () => {
+    const violation = checkProtocolPurity(violating.path).violations.find((candidate) =>
+      candidate.file.startsWith("packages/facilitator/"),
+    );
+
+    expect(violation).toBeDefined();
+    expect(violation?.rule).toBe("signature-handling");
+  });
+
+  it("catches transaction rebuilding in apps/facilitator", () => {
+    const violation = checkProtocolPurity(violating.path).violations.find((candidate) =>
+      candidate.file.startsWith("apps/facilitator/"),
+    );
+
+    expect(violation).toBeDefined();
+    expect(violation?.rule).toBe("xdr-construction");
+  });
+
+  it("permits a facilitator that composes upstream instead of reimplementing it", () => {
+    const report = checkProtocolPurity(clean.path);
+    expect(report.violations).toEqual([]);
+    expect(
+      report.scanned > 0 &&
+        checkProtocolPurity(clean.path).violations.every(
+          (violation) => !violation.file.includes("facilitator"),
+        ),
+    ).toBe(true);
   });
 });
 

@@ -339,6 +339,136 @@ for XDR construction and signature handling under the same rules as `packages/se
 `tests/unit/check-protocol-purity.test.ts` against fixtures that construct a transaction and call
 `Keypair.fromSecret` in each of those directories.
 
+## M7 — catalog, discovery and MCP, on Stellar testnet
+
+Added in the pre-M8 cleanup (§E.6): the evidence existed in commit `129d707` and in the PR body
+for `feat/m7-catalog-discovery`, but this page had no M7 section, so the criteria were provable
+only by reading git history.
+
+**Two independent runs are recorded, not one.** Both are genuine and both were re-confirmed from
+Horizon while writing this section. A single pair of hashes proves a payment settled once; two
+pairs produced by separate runs of the same suite show the path is repeatable rather than a
+result that happened to survive one execution.
+
+### Run 1 — recorded in the commit message of `129d707`
+
+| AC | Transaction hash | Ledger | Successful |
+|---|---|---|---|
+| AC7.1 / AC7.3 — a paid request makes the endpoint findable | `afb403aa97eec22258b24bbea669e80c51f3ecab324f37e430133af5c7ce60b3` | 4172914 | `true` |
+| AC7.8 — an MCP agent discovers, selects and pays | `67171cdf40cae0d78e42d650abe959e66e1a19915242714b1b4ef082902c91ce` | 4172916 | `true` |
+
+### Run 2 — recorded in the pull-request body for `feat/m7-catalog-discovery`
+
+| AC | Transaction hash | Ledger | Successful |
+|---|---|---|---|
+| AC7.1 / AC7.3 | `e3270f26d880bef1c39da028c160e36163e3ce6529afa4b94c3ccb033fe98b2e` | 4173264 | `true` |
+| AC7.8 (MCP agent) | `06b1de095ace91f65f7ea16ae2f6e287efc0dfcd1083962d9b4239bb2b64c130` | 4173266 | `true` |
+
+All four were submitted by a Movo facilitator sponsor
+(`GBVMPGDRMNNJF6F27KWYG4TYMSZKG6CU7HHFNKNLLDAZW6AAAGXO6MDV`) and are confirmable independently:
+
+```
+https://horizon-testnet.stellar.org/transactions/afb403aa97eec22258b24bbea669e80c51f3ecab324f37e430133af5c7ce60b3
+https://horizon-testnet.stellar.org/transactions/67171cdf40cae0d78e42d650abe959e66e1a19915242714b1b4ef082902c91ce
+https://horizon-testnet.stellar.org/transactions/e3270f26d880bef1c39da028c160e36163e3ce6529afa4b94c3ccb033fe98b2e
+https://horizon-testnet.stellar.org/transactions/06b1de095ace91f65f7ea16ae2f6e287efc0dfcd1083962d9b4239bb2b64c130
+```
+
+**MCP payment execution is verified on testnet** — AC7.8 above is an agent that discovered a
+resource through `bazaar.search`, selected it, and paid for it through `bazaar.paidCall`. Stated
+plainly, and with its ceiling stated too: verified *on testnet*, which is not a claim about
+production (§E.2).
+
+### AC7.9 — a refused payment produces no signature
+
+Asserted two ways rather than one: a signer spy records zero calls, **and** the buyer's budget is
+read after the refusal. The second assertion exists because of the §D.1 `maxTotalSpend` defect —
+a budget that is never credited looks identical to a budget that refused correctly if you only
+ask whether a signature was produced.
+
+### AC7.10 — the same suite against both backends, and now in CI
+
+`tests/integration/catalog-store-parity.test.ts` and `tests/integration/discovery-catalog.test.ts`
+run every case against SQLite and against Postgres. The first execution against real Postgres
+found the `list()` extensions filter built as `"extensions ? ?"`, whose placeholder rewrite ate
+the jsonb operator — a syntax error on every filtered query, in code that typechecked and had
+never run. Fixed to `jsonb_exists`.
+
+Until the pre-M8 cleanup, CI had no Postgres, so half of AC7.10 skipped: **30 passed, 30 skipped**
+on every PR. `.github/workflows/ci.yml` now runs a `postgres:17-alpine` service container and the
+same command reports **60 passed, 0 skipped**. A skipped test is not a passing test, and the
+regression back to skipping is now itself a failure — `tests/unit/catalog-postgres-ci.test.ts`
+fails the job if `MOVO_CATALOG_TEST_POSTGRES_URL` is ever unset while `CI` is set.
+
+### Search quality, and the floor that now runs
+
+`pnpm test:search-eval` measures nDCG@10 and recall@20 over 55 labelled resources and 114
+queries. The floors existed from M7 but no workflow ran them, so the ranker could regress in
+silence. `.github/workflows/ci.yml` now runs the lexical-only configuration as a required check:
+
+```
+search eval — lexical-only
+  nDCG@10:        0.8524   (floor 0.55)
+  recall@20:      0.8711   (floor 0.75)
+```
+
+The gate ships with its proof of failure. `pnpm test:search-eval:proof` re-runs the identical
+stack with the fused ranking reversed and passes only when the floors reject it:
+
+```
+search eval — lexical-only [DEGRADED FIXTURE]
+  nDCG@10:        0.3298   (floor 0.55)
+search eval FAILED: lexical-only [DEGRADED FIXTURE] nDCG@10 0.3298 is below the floor 0.55.
+proof-of-failure PASSED: the degraded ranking was rejected by its floors.
+```
+
+The hybrid floors (0.70 / 0.90) — the numbers `docs/discovery/search-quality.md` publishes — run
+in the Conformance workflow rather than the PR gate, because that configuration downloads the
+MiniLM weights on first run and a required check must not depend on a third party's CDN.
+
+## Evidence alignment (§E.4)
+
+Three criteria whose implementations were correct but whose evidence did not stand on its own.
+
+### AC0.7 — the spike branch is deleted, and no spike code is on `main`
+
+Not re-run, because the branch is gone and re-creating one would prove nothing about the one that
+existed. What survives is checkable by anyone with the remote:
+
+- `git ls-remote --heads origin` lists twelve branches — `main`, nine milestone branches and two
+  `chore/*` — and **no `spike/*` branch**. `spike/x402-stellar-e2e` (spec §10, M0) is absent.
+- `git ls-tree -r --name-only HEAD | grep -i spike` returns exactly one path: `docs/SPIKE_REPORT.md`.
+  The report is on `main`; no spike *code* is.
+- The report itself was added by `513aac3` (*"docs: M0 spike report — confirmed Stellar testnet
+  settlement"*), a single-file commit touching `docs/SPIKE_REPORT.md` and nothing else.
+
+### AC3.3 — a replayed payload is rejected on its second use
+
+Previously asserted as `expect(errorReason).toBeTruthy()`, which is true of every rejection this
+service can produce and could not have distinguished replay protection from any other failure —
+nor caught a reason-collapse (§D.1). Now pinned by name, against a live run:
+
+| Scenario | Reason |
+|---|---|
+| **Replayed after settling** | **`invalid_exact_stellar_payload_simulation_failed`** |
+| Tampered amount | `invalid_exact_stellar_payload_wrong_amount` |
+| Wrong network | `unsupported_network` |
+| Wrong asset | `invalid_exact_stellar_payload_wrong_asset` |
+| Wrong recipient | `invalid_exact_stellar_payload_wrong_recipient` |
+
+Produced by `MOVO_E2E=1 pnpm vitest run --project e2e tests/e2e/facilitator-settlement.test.ts -t
+"AC6.5"` against the live service, 7 passed. The reason is a single exported constant
+(`REPLAYED_REJECTION_REASON` in `@movoframework/testing`) so the assertion and this table cannot
+drift apart, and a named test asserts the replay reason is one no other scenario returns.
+
+### AC4.7 — the four-concept table
+
+The doc was never missing; the AC named a path that has never existed. §10's M4 criterion read
+`docs/concepts/discovery.md`, while §17, the §22 M4 prompt, the §31 checklist and
+`docs/quickstart.md` all name `docs/bazaar/overview.md`, which is where the four-concept table
+and the non-promise statement have always been. The AC was corrected to match the other four
+call sites rather than the doc moved to match the outlier.
+
 ## What is not claimed
 
 - **AC6.2 — pubnet: UNVERIFIED.** Nothing in M6 was run against `stellar:pubnet`. No funded
@@ -376,6 +506,23 @@ for XDR construction and signature handling under the same rules as `packages/se
   fabricating the result is prohibited. **Movo's own code needs no change for this**: the
   facilitator never inspects credential types, so whatever upstream accepts, this service
   accepts. Closing it is a fixture task, not an implementation task.
+
+  **Re-verified in the pre-M8 cleanup (§E.5), from the installed declarations rather than from
+  the earlier report.** `node_modules/@x402/stellar/dist/esm/signer-F5n-6Pce.d.mts` states of
+  `ClientStellarSigner`: *"Supports both classic (G) and contract (C) accounts"*, and
+  `chunk-4HPDVFME.mjs` still classifies an auth entry by `sorobanCredentialsAddress()` alone —
+  `Address.fromScAddress(...)`, which resolves `C…` as readily as `G…`, then `signature.switch()
+  .name !== "scvVoid"` for signed-ness. Nothing narrows either to ed25519. The upstream finding
+  stands and there is still nothing to report upstream.
+
+  **The live half remains blocked on toolchain, not on code.** Producing the evidence needs a
+  `__check_auth` custom-account contract authored in Rust, built to `wasm32v1-none`, deployed to
+  testnet with the Stellar CLI, and then paid through by a stock client. This environment has
+  `rustup` and `cargo` but `rustup target list --installed` returns only
+  `x86_64-pc-windows-msvc`, and `stellar` is not on `PATH`. Fabricating a hash is prohibited, so
+  this stays **UNVERIFIED**. What would close it: `cargo install --locked stellar-cli`,
+  `rustup target add wasm32v1-none`, a funded testnet deployer account, and one payment recorded
+  with its Horizon-confirmed hash.
 - **AC6.4 on pubnet: UNVERIFIED.** The testnet half passed 7/7 (above). The pubnet half needs
   the same prerequisites as AC6.2.
 - **Pubnet (core track).** Nothing in M2 was run against `stellar:pubnet` either, and the M2 e2e

@@ -21,6 +21,7 @@ import {
   resolveFacilitatorConfig,
 } from "../../packages/facilitator/src/index.ts";
 import { mountExpress } from "../../packages/server/src/index.ts";
+import { REPLAYED_REJECTION_REASON } from "../../packages/testing/src/scenarios.ts";
 
 /**
  * M6's evidence, produced against real Stellar testnet.
@@ -366,7 +367,12 @@ describe.skipIf(!E2E_ENABLED)("AC6.5 — protocol rejections carry distinct non-
     );
 
     expect(replay.body["success"]).toBe(false);
-    expect(replay.body["errorReason"]).toBeTruthy();
+    // AC3.3, pinned (§E.4). `toBeTruthy()` was true of every rejection this service can produce,
+    // so it could not tell replay protection from any other failure — including the case where
+    // upstream collapses replay onto a neighbouring reason. If this equality ever breaks, the
+    // fix is to read the new reason from the installed scheme and update both this constant and
+    // the AC6.5 table in docs/CONFORMANCE.md, not to loosen the assertion.
+    expect(replay.body["errorReason"]).toBe(REPLAYED_REJECTION_REASON);
     observed.set("replayed", replay.body["errorReason"] as string);
 
     process.stdout.write(
@@ -385,6 +391,16 @@ describe.skipIf(!E2E_ENABLED)("AC6.5 — protocol rejections carry distinct non-
     // Distinctness matters as much as non-nullness: an agent that receives the same token for
     // "you underpaid" and "you paid the wrong account" cannot act differently on them.
     expect(new Set(observed.values()).size).toBeGreaterThanOrEqual(3);
+  });
+
+  it("gives a replayed payload a reason no other scenario returns (AC3.3)", () => {
+    const replayed = observed.get("replayed");
+    expect(replayed).toBe(REPLAYED_REJECTION_REASON);
+    const others = [...observed].filter(([scenario]) => scenario !== "replayed");
+    expect(others.length).toBeGreaterThan(0);
+    for (const [scenario, reason] of others) {
+      expect(reason, `${scenario} returned the replay reason`).not.toBe(replayed);
+    }
   });
 });
 

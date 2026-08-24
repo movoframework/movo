@@ -51,6 +51,13 @@ jobs:
       - name: End-to-end suite
         run: pnpm test:e2e
 
+      # The hybrid floors (nDCG@10 0.70, recall@20 0.90) — the numbers `search-quality.md`
+      # publishes. They live here rather than in the PR gate because the configuration downloads
+      # the MiniLM weights on first run, and a required check must not depend on a CDN. The PR
+      # gate enforces the lexical-only floors, which need no network.
+      - name: Search eval floor (hybrid, published numbers)
+        run: pnpm test:search-eval
+
       # Regenerating the matrix here surfaces facilitator drift as a diff in the job log even
       # when every assertion still passes.
       - name: Regenerate compatibility matrix

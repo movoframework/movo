@@ -26,9 +26,20 @@
  * to the current score to the third decimal is a floor that fails on noise and gets raised until
  * it means nothing.
  *
+ * ## The proof-of-failure fixture
+ *
+ * A floor is only a gate if it can fail. `--degraded` runs the identical stack over the
+ * identical labelled set and then **reverses the fused ranking**: a genuine ranking regression
+ * rather than a mocked one, since the same documents are retrieved and merely ordered
+ * worst-first. Both floors must reject it. CI runs it immediately after the real gate and fails
+ * the job if the degraded run *passes*, so a floor raised into meaninglessness — or a gate whose
+ * exit code stopped being read — is caught by the gate itself rather than by the next person to
+ * read the numbers.
+ *
  * Usage:
  *   node scripts/search-eval.ts                 # hybrid (lexical + embeddings)
  *   node scripts/search-eval.ts --lexical-only  # the degraded configuration
+ *   node scripts/search-eval.ts --degraded      # the proof-of-failure fixture; must exit 1
  *   node scripts/search-eval.ts --json
  *
  * Refresh process: docs/discovery/search-quality.md.
@@ -56,6 +67,35 @@ export const RECALL_20_FLOOR = 0.9;
 /** Floors for the lexical-only configuration, which is legitimately weaker on paraphrase. */
 export const LEXICAL_NDCG_10_FLOOR = 0.55;
 export const LEXICAL_RECALL_20_FLOOR = 0.75;
+
+/**
+ * What `--degraded` prints when the floors correctly reject the reversed ranking, and what they
+ * print when they do not. Exported because `tests/unit/search-eval-gate.test.ts` matches on them:
+ * a gate and its proof-of-failure fixture read the same constant rather than two copies that can
+ * drift apart.
+ */
+export const PROOF_OF_FAILURE_PASSED =
+  "proof-of-failure PASSED: the degraded ranking was rejected by its floors.";
+export const PROOF_OF_FAILURE_FAILED =
+  "proof-of-failure FAILED: a deliberately reversed ranking met every floor.";
+
+/**
+ * A floor override that may only make the gate **stricter**.
+ *
+ * `tests/unit/search-eval-gate.test.ts` uses it to prove the non-zero exit path is reachable at
+ * all — without it, "the gate exited 0" is consistent with a gate that never exits 1. The clamp
+ * is the point: `Math.max` means this variable cannot be used, in CI or anywhere else, to lower
+ * a floor and quietly turn a red build green.
+ *
+ * @param base - The compiled-in floor
+ * @returns The stricter of the compiled-in floor and the override
+ */
+export function effectiveFloor(base: number): number {
+  const raw = process.env["MOVO_SEARCH_EVAL_FLOOR_OVERRIDE"];
+  if (raw === undefined || raw === "") return base;
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? Math.max(base, parsed) : base;
+}
 
 interface CorpusEntry {
   readonly id: string;
@@ -176,10 +216,14 @@ export function recall(
 /**
  * Run the eval over one configuration.
  *
- * @param options - Whether to include the semantic retriever
+ * @param options - Whether to include the semantic retriever, and whether to degrade the ranking
+ *   deliberately (the proof-of-failure fixture)
  * @returns The measured result
  */
-export async function runEval(options: { lexicalOnly: boolean }): Promise<EvalResult> {
+export async function runEval(options: {
+  lexicalOnly: boolean;
+  degraded?: boolean;
+}): Promise<EvalResult> {
   const corpus = JSON.parse(readFileSync(join(EVAL_DIR, "corpus.json"), "utf8")) as CorpusEntry[];
   const queries = JSON.parse(
     readFileSync(join(EVAL_DIR, "queries.json"), "utf8"),
@@ -212,7 +256,10 @@ export async function runEval(options: { lexicalOnly: boolean }): Promise<EvalRe
       if (queryVector !== undefined) lists.push(vectors.search(queryVector, 100));
     }
 
-    const ranked = reciprocalRankFusion(lists).map((candidate) => candidate.id);
+    const fused = reciprocalRankFusion(lists).map((candidate) => candidate.id);
+    // The proof-of-failure fixture. Retrieval is untouched and only the order is inverted, so a
+    // gate that fails here is failing on ranking quality and on nothing else.
+    const ranked = options.degraded === true ? [...fused].reverse() : fused;
     const queryNdcg = ndcg(ranked, labelled.relevant, 10);
 
     ndcgTotal += queryNdcg;
@@ -225,8 +272,11 @@ export async function runEval(options: { lexicalOnly: boolean }): Promise<EvalRe
     0,
   );
 
+  const configuration = options.lexicalOnly ? "lexical-only" : "hybrid (BM25 + embeddings, RRF)";
+
   return {
-    configuration: options.lexicalOnly ? "lexical-only" : "hybrid (BM25 + embeddings, RRF)",
+    configuration:
+      options.degraded === true ? `${configuration} [DEGRADED FIXTURE]` : configuration,
     model: options.lexicalOnly ? "none" : (embedder?.id ?? "none"),
     corpusSize: corpus.length,
     queryCount: queries.length,
@@ -245,21 +295,27 @@ async function main(): Promise<void> {
       "lexical-only": { type: "boolean", default: false },
       json: { type: "boolean", default: false },
       both: { type: "boolean", default: false },
+      degraded: { type: "boolean", default: false },
     },
   });
 
+  const degraded = values.degraded === true;
   const configurations = values.both === true ? [true, false] : [values["lexical-only"] === true];
   const results: EvalResult[] = [];
   for (const lexicalOnly of configurations) {
-    results.push(await runEval({ lexicalOnly }));
+    results.push(await runEval({ lexicalOnly, degraded }));
   }
 
   if (values.json === true) {
     process.stdout.write(`${JSON.stringify(results, null, 2)}\n`);
   } else {
     for (const result of results) {
-      const ndcgFloor = result.model === "none" ? LEXICAL_NDCG_10_FLOOR : NDCG_10_FLOOR;
-      const recallFloor = result.model === "none" ? LEXICAL_RECALL_20_FLOOR : RECALL_20_FLOOR;
+      const ndcgFloor = effectiveFloor(
+        result.model === "none" ? LEXICAL_NDCG_10_FLOOR : NDCG_10_FLOOR,
+      );
+      const recallFloor = effectiveFloor(
+        result.model === "none" ? LEXICAL_RECALL_20_FLOOR : RECALL_20_FLOOR,
+      );
       process.stdout.write(
         `\nsearch eval — ${result.configuration}\n` +
           `  model:          ${result.model}\n` +
@@ -276,8 +332,12 @@ async function main(): Promise<void> {
 
   let failed = false;
   for (const result of results) {
-    const ndcgFloor = result.model === "none" ? LEXICAL_NDCG_10_FLOOR : NDCG_10_FLOOR;
-    const recallFloor = result.model === "none" ? LEXICAL_RECALL_20_FLOOR : RECALL_20_FLOOR;
+    const ndcgFloor = effectiveFloor(
+      result.model === "none" ? LEXICAL_NDCG_10_FLOOR : NDCG_10_FLOOR,
+    );
+    const recallFloor = effectiveFloor(
+      result.model === "none" ? LEXICAL_RECALL_20_FLOOR : RECALL_20_FLOOR,
+    );
     if (result.ndcg10 < ndcgFloor) {
       process.stderr.write(
         `\nsearch eval FAILED: ${result.configuration} nDCG@10 ${result.ndcg10.toFixed(4)} is below the floor ${ndcgFloor.toFixed(2)}.\n`,
@@ -290,6 +350,21 @@ async function main(): Promise<void> {
       );
       failed = true;
     }
+  }
+
+  // Under --degraded the polarity is inverted: the run is *expected* to fail, and a pass is the
+  // defect. Decided here rather than left to the caller's shell, so that the message names what
+  // actually broke — floors that no longer gate, not a ranker that regressed.
+  if (degraded) {
+    if (failed) {
+      process.stdout.write(`\n${PROOF_OF_FAILURE_PASSED}\n`);
+      return;
+    }
+    process.stderr.write(
+      `\n${PROOF_OF_FAILURE_FAILED}\n` +
+        "The floors are not gating anything. Fix them before trusting any search number.\n",
+    );
+    process.exit(1);
   }
 
   if (failed) {

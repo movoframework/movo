@@ -25,6 +25,34 @@ jobs:
       matrix:
         node: [22, 24, 26]
 
+    # AC7.10 is "the same suite passes against both backends", and without a Postgres here the
+    # Postgres half skipped — around thirty tests reported as green while never executing. That
+    # is the half that found `"extensions ? ?"` eating the jsonb operator, a syntax error on
+    # every filtered query in code that typechecked. A container is local to the runner, so this
+    # does not breach the no-network-I/O rule above: nothing third-party has to be up.
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: movo
+          POSTGRES_PASSWORD: movo
+          POSTGRES_DB: movo_catalog_test
+        ports:
+          - 5432:5432
+        # Without the health check the suite races the container's first-boot initdb and fails
+        # on connection refused, which reads as a broken store rather than a cold database.
+        options: >-
+          --health-cmd "pg_isready -U movo -d movo_catalog_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    env:
+      # Read by tests/support/catalog-stores.ts. `tests/unit/catalog-postgres-ci.test.ts` fails
+      # the job if this is ever unset while CI is true, so deleting the service above turns the
+      # build red rather than turning thirty tests back into silent skips.
+      MOVO_CATALOG_TEST_POSTGRES_URL: postgres://movo:movo@localhost:5432/movo_catalog_test
+
     steps:
       - uses: actions/checkout@v5
 
@@ -82,6 +110,41 @@ jobs:
       # is the first code a new user reads, and it would otherwise rot invisibly.
       - name: Test (scaffold templates)
         run: pnpm test:templates
+
+  # §E.3(1). The nDCG@10 and recall@20 floors existed from M7 but no workflow ran them, so the
+  # ranker could regress to nothing and every published search number would stay green — the
+  # inert-`maxTotalSpend` defect at the enforcement layer. This job is a required check.
+  #
+  # It runs the **lexical-only** configuration, which has floors of its own (0.55 / 0.75). The
+  # hybrid configuration needs the MiniLM weights fetched from the Hugging Face hub at first
+  # run, and a required check that goes red when a third party's CDN is down is exactly what the
+  # header of this file forbids. The hybrid floors are enforced by `pnpm test:search-eval` in the
+  # Conformance workflow, where network I/O is permitted and a failure does not block a merge.
+  search-eval:
+    name: search eval floor
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Search eval floor
+        run: pnpm test:search-eval:ci
+
+      # The proof-of-failure, run in the same job as the gate it proves. It re-runs the identical
+      # stack with the fused ranking reversed and succeeds only when the floors *reject* it. A
+      # floor quietly lowered until it passes anything makes this step fail, which is the only
+      # way a gate can defend its own meaning rather than merely its exit code.
+      - name: Proof of failure — a degraded ranking must be rejected
+        run: pnpm test:search-eval:proof
 
   # Sibling of `verify` with no `needs:` — a secret scan must not be gated behind a build.
   # We invoke the gitleaks binary directly rather than gitleaks/gitleaks-action: only the

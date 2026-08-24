@@ -14,6 +14,21 @@ export const PAYMENT_SCENARIOS = [
 ] as const;
 export type PaymentScenario = (typeof PAYMENT_SCENARIOS)[number];
 
+/**
+ * The reason a payload replayed after settlement is rejected with (AC3.3).
+ *
+ * Upstream's, not Movo's: a settled payload's authorisation entry no longer simulates, so
+ * `ExactStellarScheme` fails it at simulation. Observed from the live service and recorded in
+ * `docs/CONFORMANCE.md` under AC6.5.
+ *
+ * Named here rather than spelled out at the assertion because §E.4 asks AC3.3 to be pinned by an
+ * explicit assertion on the **distinct reason**, and §D.1's lesson is that a test asserting only
+ * that rejection happened cannot see a reason-collapse: the moment replay and, say, a tampered
+ * amount return the same token, an agent can no longer tell "you already spent this" from "you
+ * underpaid", and every test that checked `toBeTruthy()` stays green through it.
+ */
+export const REPLAYED_REJECTION_REASON = "invalid_exact_stellar_payload_simulation_failed";
+
 /** Clone a payload supplied by an upstream client before a test mutates it. */
 export function cloneSignedPayment(payload: PaymentPayload): PaymentPayload {
   return structuredClone(payload);

@@ -31,7 +31,9 @@
     "check:key-generation": "node scripts/check-key-generation.ts",
     "check:upstream-validators": "node scripts/check-upstream-validators.ts",
     "check:project-references": "node scripts/check-project-references.ts",
-    "test:search-eval": "node scripts/search-eval.ts --both"
+    "test:search-eval": "node scripts/search-eval.ts --both",
+    "test:search-eval:ci": "node scripts/search-eval.ts --lexical-only",
+    "test:search-eval:proof": "node scripts/search-eval.ts --lexical-only --degraded"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.7",

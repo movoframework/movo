@@ -35,6 +35,32 @@ export const POSTGRES_URL: string | undefined = process.env["MOVO_CATALOG_TEST_P
 /** Whether the Postgres half of AC7.10 can run in this environment. */
 export const POSTGRES_ENABLED: boolean = POSTGRES_URL !== undefined && POSTGRES_URL !== "";
 
+/** What CI reports when the Postgres service is missing. Matched on by the guard's own test. */
+export const POSTGRES_REQUIRED_IN_CI =
+  "MOVO_CATALOG_TEST_POSTGRES_URL is unset while CI is set. The Postgres half of AC7.10 would " +
+  "skip, and around thirty tests would report green without executing — the state §E.3(2) was " +
+  "raised to end. Restore the `postgres` service in .github/workflows/ci.yml.";
+
+/**
+ * Skipping locally is a convenience; skipping in CI is the defect.
+ *
+ * §E.3(2): a skipped test is not a passing test. Because these rows skip *loudly but silently to
+ * the exit code*, deleting the service container from the workflow would take thirty executing
+ * tests back to thirty skips without turning anything red. This turns that regression into a
+ * failure, and `tests/unit/catalog-postgres-ci.test.ts` proves it fires.
+ *
+ * @param env - The environment to judge, injected so the failure path is testable
+ * @returns The failure message, or `undefined` when the environment is acceptable
+ */
+export function postgresRequirementFailure(env: {
+  readonly [name: string]: string | undefined;
+}): string | undefined {
+  const ci = env["CI"];
+  if (ci === undefined || ci === "" || ci === "false") return undefined;
+  const url = env["MOVO_CATALOG_TEST_POSTGRES_URL"];
+  return url === undefined || url === "" ? POSTGRES_REQUIRED_IN_CI : undefined;
+}
+
 /** One backend under test. */
 export interface CatalogBackend {
   readonly name: "sqlite" | "postgres";

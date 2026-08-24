@@ -279,6 +279,89 @@ port 5434 for AC7.10 re-runs (`docker rm -f movo-catalog-pg` to remove).
 
 ---
 
+## E. M7 audit findings and the pre-M8 cleanup milestone
+
+A full M0–M7 audit ran without modifying the repository: 70 acceptance criteria, 59 complete, 6
+partial, 2 missing, 3 needing verification (84.3%). Live testnet confirmed independently on Horizon,
+ledgers 4172839–4173266. This section records the findings as binding and defines a **pre-M8
+cleanup milestone** that is explicitly **not** M8 — it makes the enforcement ground solid before the
+release milestone stands on it.
+
+### E.1 The 84.3% headline — how it may and may not be used
+
+The remaining 15.7% is disproportionately the **hard, externally-paced** part: pubnet, the Audit
+Bank review, smart-account evidence. The honest framing is **"testnet-complete; the remainder is
+production infrastructure and external review — the costly part by design,"** not "84% done," which
+reads as *nearly finished* when the remainder carries the real operational risk. Do not quote the
+percentage without that context.
+
+### E.2 Positioning rulings (binding on all Movo-describing text)
+
+- The x402 e2e suite passing **7/7** against the Movo facilitator is a **wire-level interoperability**
+  result. Never "protocol certification."
+- MCP payment execution on testnet is **verified functionality** — state it plainly, do not
+  over-hedge. But the ceiling is **"verified on testnet,"** never "verified" unqualified. The
+  earlier "MCP is discovery only" caution was too conservative; the correction does not extend to
+  implying production readiness.
+- Do not manufacture traction. Current reality: no published npm packages, no deployed production
+  instance, no external users, one contributor. Acceptable for a Build Award; never described as
+  adoption.
+- The two AC6 gaps are **not architectural defects.** Pubnet is an unfinished production deployment;
+  `__check_auth` is an evidence gap (upstream accepts contract credentials, Movo never inspects
+  credential types). No future session may restate either as a design problem.
+
+### E.3 CI enforcement gaps — the load-bearing fixes, same defect class one level up
+
+A gate that exists but is not wired into CI **cannot fire** — the M0 `biome.json` truncation and the
+M7 inert `maxTotalSpend`, now at the enforcement layer. Both must be fixed **before** M8, because
+M8's nature is *proving what exists* and it cannot rest on enforcement that is not running.
+
+1. **Search-eval floor not in CI.** `pnpm test:search-eval` and the nDCG/recall floors exist but no
+   workflow runs them, so the floor can regress silently. Wire it into CI as a required check with a
+   proof-of-failure fixture (a deliberately degraded ranking must fail the job).
+2. **Postgres tests skipped in CI.** ~30 integration tests need a Postgres service container CI does
+   not provide. Add the service (the AC7.10 defect — `"extensions ? ?"` eating the jsonb operator —
+   is exactly what these guard). A skipped test is not a passing test.
+
+### E.4 Verification items — small, evidence alignment not defects
+
+| AC | Finding | Action |
+|---|---|---|
+| AC0.7 | spike branch deleted; not provable from the local clone | check remote branch history; if gone, record the git evidence that survives (spike report, CI run) rather than re-running |
+| AC3.3 | replay protection works but is not pinned by an explicit named assertion | convert to a named, distinct-reason assertion (the §D.1 lesson: assert the *reason*, not just rejection) |
+| AC4.7 | four-concept Bazaar table exists at `docs/bazaar/overview.md`, not the AC's specified path | move the doc or amend the AC; implementation is correct |
+
+### E.5 `__check_auth` evidence (AC6.11) — closeable on testnet, no pubnet needed
+
+One `__check_auth` contract deployed to testnet + one payment through it yields the missing evidence.
+Needs the Stellar CLI and the `wasm32` target (absent from prior build envs). This is **not** gated
+on pubnet and can be closed in the cleanup milestone or early M8. No Movo code change — verify from
+the installed declarations that upstream's facilitator path accepts the smart-account signer, then
+prove it live.
+
+### E.6 `docs/CONFORMANCE.md` — add the missing M7 section
+
+It covers Gate 1 and M6 but has no M7 section; the M7 testnet hashes live in commit `129d707` and the
+spec. Add an M7 section using the **commit-message pair** the technical doc already uses
+(`afb403aa…` / `67171cdf…`), and record the PR-body pair (`e3270f26…` / `06b1de09…`) as a second
+genuine run. Never invent or placeholder a hash.
+
+### E.7 The pre-M8 cleanup milestone — scope (NOT M8)
+
+One focused session, no new features, no architecture change:
+1. E.3(1) search-eval CI gate + proof-of-failure fixture.
+2. E.3(2) Postgres CI service container; unskip the ~30 tests.
+3. E.4 AC0.7 / AC3.3 / AC4.7 evidence alignment.
+4. E.6 `CONFORMANCE.md` M7 section.
+5. E.5 `__check_auth` testnet evidence **if** the Stellar CLI + `wasm32` toolchain are available;
+   else STOP and report the toolchain need — do not fake it.
+
+Pubnet (AC6.2/AC6.4-pubnet) and the Audit Bank review are **not** in this milestone — they are
+human-gated and belong to the M8 production track. The Audit Bank conversation should already be in
+motion; it is the longest external pole and gates the mainnet tag.
+
+---
+
 ## 0. Executive Architecture Summary
 
 ### 0.1 The finding that reshapes the plan
@@ -1829,7 +1912,7 @@ The service is composition plus operations. It contains **no cryptography of its
     - AC4.4 A budget with `maxAmountPerRequest` below the offer refuses and the signer spy has zero calls.
     - AC4.5 `allowedPayTo` mismatch refuses without signing.
     - AC4.6 `call(weatherResource, { city }, baseUrl)` is typed as the handler's return type with no cast.
-    - AC4.7 `docs/concepts/discovery.md` contains the four-concept table and the non-promise statement.
+    - AC4.7 `docs/bazaar/overview.md` contains the four-concept table and the non-promise statement. *(Amended in the pre-M8 cleanup per §E.4: this line read `docs/concepts/discovery.md`, a path that has never existed. §17's documentation architecture, the M4 prompt in §22 and the §31 checklist all name `docs/bazaar/overview.md`, and `docs/quickstart.md` links to it — this line was the outlier, so the AC was corrected rather than four call sites and a shipped doc moved to match it.)*
     - AC4.8 `@movoframework/bazaar` contains no validator implementation of its own — asserted by review checklist and by the absence of validation logic outside calls to upstream functions.
 14. **Security requirements.** Budget checks precede signing; `validateDiscoveryStrict` warns on private/loopback/internal hosts in `resource.url`; discovery metadata documented as public.
 15. **Licence requirements.** Gate green.

@@ -111,6 +111,17 @@ jobs:
       - name: Test (scaffold templates)
         run: pnpm test:templates
 
+      # apps/landing has its own single tsconfig (a plain Vite split, not a workspace package
+      # reference) rather than the tsc --build project-reference graph, so pnpm typecheck /
+      # pnpm build at the root never touch it. Without this step a broken landing page would
+      # be invisible to every gate above and rot silently — the same defect class check:docs
+      # exists to catch for documentation.
+      - name: Typecheck and build the landing page
+        working-directory: apps/landing
+        run: |
+          pnpm typecheck
+          pnpm build
+
   # §E.3(1). The nDCG@10 and recall@20 floors existed from M7 but no workflow ran them, so the
   # ranker could regress to nothing and every published search number would stay green — the
   # inert-`maxTotalSpend` defect at the enforcement layer. This job is a required check.

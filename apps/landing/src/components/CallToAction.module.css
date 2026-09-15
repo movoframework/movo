@@ -1,0 +1,29 @@
+.section {
+  padding: var(--space-8) 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.card {
+  padding: var(--space-8) var(--space-7);
+  text-align: center;
+  background: linear-gradient(180deg, var(--color-bg-raised), var(--color-bg-inset));
+}
+
+.card h2 {
+  font-size: clamp(1.75rem, 3.5vw, 2.5rem);
+  margin-bottom: var(--space-4);
+}
+
+.card p {
+  color: var(--color-text-muted);
+  font-size: 1.0625rem;
+  max-width: 520px;
+  margin: 0 auto var(--space-6);
+}
+
+.ctas {
+  display: flex;
+  gap: var(--space-3);
+  justify-content: center;
+  flex-wrap: wrap;
+}

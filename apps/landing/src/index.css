@@ -8,6 +8,7 @@
   --white-20: rgba(255, 255, 255, 0.2);
   --white-5: rgba(255, 255, 255, 0.05);
   --white-80: rgba(255, 255, 255, 0.8);
+  --black-70: rgba(0, 0, 0, 0.7);
   --font-display: "Archivo Black", "Arial Black", sans-serif;
   --font-mono: "Space Mono", "Courier New", monospace;
   --font-body: "Inter", -apple-system, sans-serif;
@@ -376,6 +377,106 @@ a {
   to {
     transform: translateX(-50%);
   }
+}
+
+/* ---------- Mechanism (how it works + code) ---------- */
+
+.mechanism {
+  padding-block: 60px;
+  border-top: 2px solid var(--black);
+}
+
+.mechanism-heading {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+  color: var(--on-accent);
+  margin-bottom: 16px;
+}
+
+.mechanism-title {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: -0.03em;
+  line-height: 0.92;
+  font-size: clamp(1.8rem, 6vw, 4rem);
+  text-wrap: balance;
+  color: var(--on-accent);
+  margin: 0 0 48px;
+}
+
+.mechanism-steps {
+  list-style: none;
+  margin: 0 0 48px;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+}
+
+@media (max-width: 900px) {
+  .mechanism-steps {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .mechanism-steps {
+    grid-template-columns: 1fr;
+  }
+}
+
+.mechanism-step {
+  border-top: 2px solid var(--black);
+  padding-top: 16px;
+}
+
+.mechanism-step-index {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 12px;
+  background: var(--black);
+  color: var(--accent);
+  padding: 2px 8px;
+  margin-bottom: 14px;
+}
+
+.mechanism-step-title {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: -0.03em;
+  font-size: clamp(1.2rem, 3vw, 1.7rem);
+  color: var(--on-accent);
+  margin-bottom: 8px;
+}
+
+.mechanism-step-body {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--black-70);
+  margin: 0;
+}
+
+.mechanism-code-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--black-70);
+  margin-bottom: 8px;
+}
+
+.mechanism-code-block {
+  background: var(--black);
+  color: var(--white);
+  border: 2px solid var(--black);
+  padding: 24px;
+  margin: 0;
+  overflow-x: auto;
+  font-size: 0.8rem;
+  line-height: 1.6;
 }
 
 /* ---------- Evidence ---------- */

@@ -1,30 +1,30 @@
-import styles from "./CallToAction.module.css";
-
-const REPO_URL = "https://github.com/movoframework/movo";
+import { REPO_URL } from "../repo.ts";
 
 export function CallToAction() {
   return (
-    <section className={styles.section}>
-      <div className="container">
-        <div className={`card ${styles.card}`}>
-          <h2>Clone it, run it, settle a payment on testnet today</h2>
-          <p>
-            Not yet on npm — v0.1.0 is testnet-complete and runs from a checkout while the first
-            publish is prepared. The full quickstart takes under an hour.
-          </p>
-          <div className={styles.ctas}>
-            <a className="button button-primary" href={REPO_URL}>
-              View on GitHub
-            </a>
-            <a
-              className="button button-secondary"
-              href={`${REPO_URL}/blob/main/docs/quickstart.md`}
-            >
-              Read the quickstart
-            </a>
-          </div>
-        </div>
-      </div>
+    <section id="cta" className="cta gutter">
+      <h2 className="cta-heading">
+        Clone the
+        <br />
+        repo.
+      </h2>
+      <a className="cta-button" href={REPO_URL}>
+        View on GitHub
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="white"
+          strokeWidth={2.4}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <line x1="5" y1="19" x2="19" y2="5" />
+          <polyline points="8 5 19 5 19 16" />
+        </svg>
+      </a>
     </section>
   );
 }

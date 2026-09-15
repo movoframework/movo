@@ -5,10 +5,7 @@
     "module": "esnext",
     "moduleResolution": "bundler",
     "jsx": "react-jsx",
-    "types": ["node"],
-    "paths": {
-      "@/*": ["./src/*"]
-    },
+    "types": [],
 
     "strict": true,
     "noUncheckedIndexedAccess": true,

@@ -18,6 +18,17 @@ name: Upstream e2e (Linux)
 # THIS WORKFLOW MUST NEVER BLOCK THE PR GATE. It clones a third-party repository and, in the
 # `suite` job, spends real testnet value. It is dispatch- and schedule-triggered only.
 #
+# ## A third disclosed accommodation, found while retiring the first two
+#
+# The pinned commit's own `e2e/pnpm-lock.yaml` was generated against Coinbase's internal npm
+# proxy: every entry's `resolution.tarball` is a literal `artifactory.cbhq.net` URL, unreachable
+# from anywhere outside that network — confirmed present on upstream `main` too, so pinning a
+# different ref does not avoid it. `--no-frozen-lockfile` alone does not help, because pnpm still
+# prefers a lockfile-pinned resolution when one exists; the lockfile must be removed so every
+# package re-resolves against the public registry. Disclosed here for the same reason the M6
+# `shell: win32` patch and the throwaway EVM/SVM keys were disclosed in `CONFORMANCE.md`: it
+# touches no assertion and no payment path, and it should not be quietly reinstated as "normal."
+#
 # ## Why two jobs
 #
 # `build` needs no credentials, so it runs anywhere and proves the MAX_PATH exclusion is a
@@ -74,9 +85,15 @@ jobs:
         with:
           node-version: 24
 
-      - name: Install the e2e workspace
+      # The lockfile pins tarball URLs on an internal registry (see the header comment above).
+      # Removing it and reinstalling is the whole workaround: everything else about the harness
+      # — its code, its scripts, its assertions — runs exactly as upstream ships it.
+      - name: Install the e2e workspace (public registry; see header comment)
         working-directory: x402/e2e
-        run: pnpm install
+        run: |
+          set -euo pipefail
+          rm -f pnpm-lock.yaml
+          pnpm install --no-frozen-lockfile
 
       # The scenario that could not run on Windows. `install.sh` / `build.sh` are upstream's own
       # scripts, unmodified — if this step passes, the exclusion was a filesystem limit and not

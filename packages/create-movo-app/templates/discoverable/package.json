@@ -1,6 +1,6 @@
 {
   "name": "@movoframework/template-discoverable",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "description": "Movo template with Bazaar discovery metadata and a buyer client",
   "license": "Apache-2.0",

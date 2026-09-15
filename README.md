@@ -6,13 +6,17 @@ Movo is an Apache-2.0 TypeScript monorepo for building [x402](https://github.com
 HTTP APIs settled on [Stellar](https://stellar.org). It is composed **over** the official
 `@x402/*` packages and reimplements no protocol primitive.
 
-> **Status: Testnet-ready.** Milestones M0–M7 are complete. The full journey — define a paid
-> resource, receive an x402 402, pay, verify, settle on Stellar, return the paid response, and be
-> discoverable afterwards — is validated end to end against live Stellar testnet, with transactions
-> confirmed from Horizon rather than from the facilitator that reported them.
+> **Status: v0.1.0, testnet-complete.** Milestones M0–M8 are complete. The full journey — define a
+> paid resource, receive an x402 402, pay, verify, settle on Stellar, return the paid response, and
+> be discoverable afterwards — is validated end to end against live Stellar testnet, with every
+> transaction confirmed from Horizon rather than from the facilitator that reported it. An
+> **unmodified upstream client** completes a payment through the stack in a dedicated conformance
+> suite, and every rejection carries a distinct machine-readable reason.
 >
-> **Not production-ready.** Nothing is published to npm yet, pubnet/mainnet has never been run, and
-> no external security review has taken place. See [Current limitations](#current-limitations).
+> **Not production-ready, and what remains is the expensive part by design.** Pubnet has never been
+> run, no third-party security review has taken place, and the packages are not yet on npm. Those
+> are the committed production follow-on, not oversights. See
+> [Current limitations](#current-limitations).
 
 ---
 
@@ -437,14 +441,22 @@ Report vulnerabilities via [SECURITY.md](SECURITY.md).
 
 Movo is validated on Stellar **testnet**. The following are known, and are future work:
 
-- **Nothing is published to npm.** All packages are at `0.0.0` and unpublished; release automation
-  is part of M8. Movo runs from a checkout today.
+- **Nothing is published to npm yet.** The packages are versioned at `0.1.0` with changelogs, the
+  release workflow publishes over npm OIDC trusted publishing with provenance and no long-lived
+  token, and every package's publish has been dry-run. The first publish is a maintainer action:
+  npm cannot publish a package's *initial* version over OIDC ([npm/cli#8544](https://github.com/npm/cli/issues/8544)),
+  so v0.1.0 is bootstrapped by hand and every release after it is tokenless. Movo runs from a
+  checkout until then.
 - **Pubnet/mainnet has never been run.** The configuration path exists and requires an explicit
   Soroban RPC URL, but no pubnet settlement has been performed and no mainnet operational posture
   has been established.
 - **Production signer infrastructure is incomplete.** Sponsor keys can be supplied via environment
-  seeds for testnet; the KMS/HSM injection point exists but no KMS integration is implemented.
-- **No external security review.** Required before any mainnet tag; not started.
+  seeds for testnet; the injection point for an external signer exists and
+  `resolveFacilitatorConfig` takes signer *objects* rather than seeds, but no KMS integration is
+  implemented. The intended production key story is written up in
+  [docs/security/key-management.md](docs/security/key-management.md).
+- **No external security review.** Required before any mainnet tag; not started. The threat model
+  it will read is written and committed.
 - **Smart-account (`__check_auth`) support is unproven.** Upstream is confirmed to accept
   contract-address credentials and Movo requires no change, but no payment from a `__check_auth`
   account has been demonstrated. This is an evidence gap, not a known defect.

@@ -1,8 +1,17 @@
 {
   "name": "@movoframework/catalog",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "The Stellar Bazaar catalog: automatic cataloging at settle time, discovery listing and hybrid search",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/movoframework/movo.git",
+    "directory": "packages/catalog"
+  },
+  "homepage": "https://github.com/movoframework/movo#readme",
+  "bugs": {
+    "url": "https://github.com/movoframework/movo/issues"
+  },
   "type": "module",
   "sideEffects": false,
   "engines": {

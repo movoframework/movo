@@ -469,6 +469,63 @@ The doc was never missing; the AC named a path that has never existed. §10's M4
 and the non-promise statement have always been. The AC was corrected to match the other four
 call sites rather than the doc moved to match the outlier.
 
+## M8 — the dedicated stock-client conformance suite (§1.16 layer 4)
+
+**The RFP's literal acceptance test** (§3.6): reviewers point stock SDK code at the deliverable
+rather than read a conformance claim. Deferred to M8 in writing since amendment 004 §8; built here
+as `tests/conformance/stock-client.test.ts`, and separate from the e2e suite for the reason given
+where it was deferred — one suite serving as both Movo's own end-to-end test and its
+interoperability evidence cannot tell a reader which of the two claims it just falsified.
+
+Two properties this suite has that a conformance claim on its own cannot:
+
+- **The scheme matrix is read from the deployment's own `/supported`**, not written into the test.
+  A deployment that advertises a scheme with no stock client registered **fails**, not skips.
+- **The network matrix carries both networks named by the RFP from the start.** Pubnet is a
+  configuration flip behind `tests/support/conformance-networks.ts`, gated by an explicit opt-in
+  (`MOVO_CONFORMANCE_ALLOW_PUBNET=1`) kept deliberately separate from its credentials, so holding
+  pubnet keys is not sufficient to spend them. `tests/unit/conformance-network-gate.test.ts` proves
+  both halves — the opt-in alone, and the credentials alone — fail closed.
+
+Produced by `MOVO_E2E=1 pnpm vitest run --project conformance tests/conformance/stock-client.test.ts`.
+
+### Settled (hash per network per scheme)
+
+| Network | Scheme | Transaction hash | Ledger |
+|---|---|---|---|
+| `stellar:testnet` | `exact` | `a3433b2562af4adf8f0bb40ccbe4eff6618fd20145c9c36fd59533e094471845` | 4303391 |
+
+```
+https://horizon-testnet.stellar.org/transactions/a3433b2562af4adf8f0bb40ccbe4eff6618fd20145c9c36fd59533e094471845
+```
+
+Confirmed `successful: true` from Horizon, independent of both the server under test and the
+facilitator that reported it.
+
+### Rejections — a distinct, non-null reason for every cause
+
+| Scenario | Reason |
+|---|---|
+| Amount tampered | `invalid_exact_stellar_payload_wrong_amount` |
+| Wrong recipient | `invalid_exact_stellar_payload_wrong_recipient` |
+| Wrong asset | `invalid_exact_stellar_payload_wrong_asset` |
+| Wrong network | `unsupported_network` |
+
+Each scenario is a **genuine signature over a genuine mismatch** — never a malformed payload, which
+anything would reject and which proves nothing about verification (spec §5.11).
+
+### `stellar:pubnet` — UNVERIFIED, correctly
+
+```
+UNVERIFIED — stellar:pubnet requires MOVO_CONFORMANCE_ALLOW_PUBNET=1. Pubnet is the committed
+production follow-on (§B.4), not part of the testnet-complete release.
+```
+
+This is the suite working as designed, not a gap in it: pubnet is a committed RFP deliverable for
+the production follow-on (§B.4), and this release does not attempt it. Running the same command
+with the opt-in and pubnet credentials set exercises the identical code path — no code changes,
+only configuration — which is the property the network matrix exists to prove.
+
 ## What is not claimed
 
 - **AC6.2 — pubnet: UNVERIFIED.** Nothing in M6 was run against `stellar:pubnet`. No funded

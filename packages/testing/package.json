@@ -1,8 +1,17 @@
 {
   "name": "@movoframework/testing",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Facilitator fixtures, the payment failure matrix, harness and assertion matchers for Movo apps",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/movoframework/movo.git",
+    "directory": "packages/testing"
+  },
+  "homepage": "https://github.com/movoframework/movo#readme",
+  "bugs": {
+    "url": "https://github.com/movoframework/movo/issues"
+  },
   "type": "module",
   "sideEffects": false,
   "engines": {

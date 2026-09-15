@@ -1,8 +1,17 @@
 {
   "name": "@movoframework/client",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Buyer-side budget accounting, typed resource clients and payment outcome decoding",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/movoframework/movo.git",
+    "directory": "packages/client"
+  },
+  "homepage": "https://github.com/movoframework/movo#readme",
+  "bugs": {
+    "url": "https://github.com/movoframework/movo/issues"
+  },
   "type": "module",
   "sideEffects": false,
   "engines": {

@@ -1,0 +1,115 @@
+name: Release
+
+# Publishes the workspace to npm with **OIDC trusted publishing** (spec §A, ex-amendment 002 §6).
+#
+# There is no `NPM_TOKEN` in this file and there must never be one. npm is restricting
+# 2FA-bypassing automation tokens (account changes Aug 2026, direct publishing Jan 2027), and a
+# long-lived token in repository secrets is the single credential whose theft publishes malware
+# under this scope. Trusted publishing exchanges a short-lived GitHub OIDC token for publish
+# rights scoped to *this repository and this workflow file*, so there is nothing to steal.
+#
+# ## Requirements, verified at docs.npmjs.com rather than recalled
+#
+#   - `id-token: write` on the job. Without it there is no OIDC token to exchange.
+#   - npm CLI >= 11.5.1 and Node >= 22.14.0. The `npm i -g npm@latest` step below is what makes
+#     that true regardless of the Node image's bundled npm.
+#   - **Provenance is automatic.** Under trusted publishing npm generates and publishes the
+#     attestation without `--provenance`. (`publishConfig.provenance` in each manifest is
+#     retained: it is what produces provenance on any non-OIDC path, and it is consistent with
+#     what OIDC does by default.)
+#   - Each package's trusted publisher is configured **on npm**, naming this repository and
+#     **this file's name**. Renaming this file breaks publishing until npm is updated to match —
+#     which is why the filename is boring and must stay `release.yml`.
+#
+# ## The bootstrap constraint — read before the first publish
+#
+# **npm cannot publish the *initial* version of a package over OIDC** (npm/cli#8544, open): the
+# npm UI requires a package to exist before its trusted publisher can be configured. Every Movo
+# package is currently unpublished, so v0.1.0's first publish must be done by a maintainer with
+# a token or `npm publish` locally, *then* trusted publishing is configured per package and
+# every subsequent release flows through this workflow with no token at all. This is a registry
+# limitation, not a design choice, and it is recorded in docs/adr/0014-release-and-versioning.md
+# so that nobody later "fixes" it by adding a long-lived secret.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    name: version or publish
+    runs-on: ubuntu-latest
+    permissions:
+      # Changesets opens/updates the "Version Packages" PR.
+      contents: write
+      pull-requests: write
+      # The OIDC token. This is the whole mechanism.
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v5
+        with:
+          # Trusted publishing needs >= 22.14.0; 24 is what the PR gate's matrix centres on.
+          node-version: 24
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+
+      # The Node image's bundled npm is older than trusted publishing requires. Without this the
+      # publish falls back to looking for a token and fails with an authentication error that
+      # reads as a missing secret rather than as a stale CLI.
+      - name: Install an npm new enough for trusted publishing
+        run: |
+          set -euo pipefail
+          npm i -g npm@latest
+          npm --version
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # A release that ships a broken build is worse than a late release. The same gates the PR
+      # gate runs, run again here against the exact tree about to be published.
+      - name: Verify
+        run: |
+          set -euo pipefail
+          pnpm check:licenses
+          pnpm check:track-isolation
+          pnpm check:protocol-purity
+          pnpm typecheck
+          pnpm lint
+          pnpm build
+          pnpm test
+
+      # The compatibility matrix is a claim about the versions in this tree. Publishing it stale
+      # would put a wrong claim in the tarball.
+      - name: Compatibility matrix is current
+        run: |
+          set -euo pipefail
+          pnpm generate:compat
+          git diff --exit-code -- docs/COMPATIBILITY.md
+
+      # Either opens the "Version Packages" PR (when changesets are pending) or, once that PR is
+      # merged and no changesets remain, publishes. `pnpm changeset publish` is the publish
+      # command; under trusted publishing it needs no token in the environment.
+      - name: Version or publish
+        uses: changesets/action@v1
+        with:
+          version: pnpm changeset version
+          publish: pnpm changeset publish
+          commit: "chore(release): version packages"
+          title: "chore(release): version packages"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

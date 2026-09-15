@@ -1,8 +1,17 @@
 {
   "name": "create-movo-app",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Scaffold a new Movo project",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/movoframework/movo.git",
+    "directory": "packages/create-movo-app"
+  },
+  "homepage": "https://github.com/movoframework/movo#readme",
+  "bugs": {
+    "url": "https://github.com/movoframework/movo/issues"
+  },
   "type": "module",
   "sideEffects": false,
   "engines": {

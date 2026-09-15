@@ -1,0 +1,36 @@
+# Code owners — deferred since amendment 001 §4, created at M8 (§A.3).
+#
+# Movo has one contributor today (§E.2: "one contributor" is the honest current state and is
+# never to be described as anything else). A single owner is therefore what this file can
+# truthfully say. It is written as paths rather than a bare catch-all anyway, because the
+# structure is the point: when a second maintainer joins, ownership moves per area rather than
+# being re-derived from scratch, and the areas below are the ones where a wrong review is
+# expensive rather than merely inconvenient.
+#
+# Note for whoever adds a team here: a CODEOWNERS entry naming a team that does not exist, or
+# that lacks write access, is silently ignored by GitHub — the rule appears to be in force and
+# never assigns anyone. Verify the handle resolves after any edit.
+
+*                               @ebubechi-ihediwa
+
+# The narrow waist. Everything Movo is allowed to know about x402 passes through here, and the
+# standing rule that only this directory may import `@x402/*` is enforced by a CI gate whose
+# meaning lives in review.
+/packages/core/src/protocol/    @ebubechi-ihediwa
+
+# The money path. Settlement, the sponsor pool, and the service that holds signing keys.
+/packages/facilitator/          @ebubechi-ihediwa
+/packages/stellar/              @ebubechi-ihediwa
+/apps/facilitator/              @ebubechi-ihediwa
+
+# The trust boundary: catalog ingest validates attacker-supplied declarations (§C.1).
+/packages/catalog/src/ingest.ts @ebubechi-ihediwa
+
+# Release and enforcement. A change here changes what every other gate means.
+/.github/workflows/             @ebubechi-ihediwa
+/scripts/                       @ebubechi-ihediwa
+/.changeset/                    @ebubechi-ihediwa
+
+# Evidence. These files are claims about what was actually run; they are not editorial.
+/docs/CONFORMANCE.md            @ebubechi-ihediwa
+/docs/security/                 @ebubechi-ihediwa

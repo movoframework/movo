@@ -1,8 +1,17 @@
 {
   "name": "@movoframework/bazaar",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Derive x402 Bazaar discovery declarations from Movo resources and escalate soft-drop findings",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/movoframework/movo.git",
+    "directory": "packages/bazaar"
+  },
+  "homepage": "https://github.com/movoframework/movo#readme",
+  "bugs": {
+    "url": "https://github.com/movoframework/movo/issues"
+  },
   "type": "module",
   "sideEffects": false,
   "engines": {

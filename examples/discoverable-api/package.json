@@ -1,6 +1,6 @@
 {
   "name": "@movoframework/example-discoverable-api",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "description": "A paid API that declares Bazaar discovery metadata derived from its resource",
   "license": "Apache-2.0",

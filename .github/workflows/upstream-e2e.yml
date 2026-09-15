@@ -1,0 +1,172 @@
+name: Upstream e2e (Linux)
+
+# Retires the two harness accommodations M6 disclosed, by running the x402 repository's own e2e
+# suite on Linux instead of Windows (spec §B.3, §D.3).
+#
+# Both accommodations were environment artifacts, not conformance concessions:
+#
+#   1. `shell: process.platform === 'win32'` added to the harness's two `spawn` calls. Upstream
+#      spawns `pnpm` bare (`e2e/src/proxy-base.ts`); on Windows that is `spawn pnpm ENOENT`
+#      because `pnpm` is a `.cmd` shim, and on Linux it resolves on PATH with no patch at all.
+#   2. Throwaway EVM/SVM keys in `e2e/.env`, because the harness's TypeScript client constructs
+#      those signers at startup regardless of which chain a scenario uses.
+#
+# And one scenario exclusion: the `next` server's Turbopack build aborted with
+# `path length … exceeds max length of filesystem` — a Windows MAX_PATH limit hit by the
+# checkout's directory depth, before any payment code ran.
+#
+# THIS WORKFLOW MUST NEVER BLOCK THE PR GATE. It clones a third-party repository and, in the
+# `suite` job, spends real testnet value. It is dispatch- and schedule-triggered only.
+#
+# ## Why two jobs
+#
+# `build` needs no credentials, so it runs anywhere and proves the MAX_PATH exclusion is a
+# Windows artifact — the exact build that failed, on Linux. `suite` needs funded testnet
+# accounts, which are repository secrets a maintainer must provide; it is skipped, loudly,
+# when they are absent. A job that quietly passes because it had nothing to run is the skipped-
+# test defect (§E.3), and this file refuses to have one.
+
+on:
+  workflow_dispatch:
+    inputs:
+      x402_ref:
+        description: Upstream commit SHA or ref to clone
+        required: false
+        default: dd927a26cfefc98c24b3ec38b3a8f204dad0c60d
+      servers:
+        description: Comma-separated server list passed to the harness
+        required: false
+        default: express,fastify,hono,next
+  schedule:
+    # Monthly, off the hour. Upstream drift is the thing this catches; weekly would be noise.
+    - cron: "41 5 1 * *"
+  push:
+    # So a change to this file is exercised by the change itself. Without it the workflow could
+    # only be verified after landing on the default branch, which is a gate nobody proved fires.
+    paths:
+      - .github/workflows/upstream-e2e.yml
+
+permissions:
+  contents: read
+
+env:
+  # Pinned deliberately. `main` would make this workflow's result unattributable: a red run
+  # could be upstream drift or a Movo regression, and there would be no way to tell which.
+  X402_REF: ${{ inputs.x402_ref || 'dd927a26cfefc98c24b3ec38b3a8f204dad0c60d' }}
+
+jobs:
+  # Retires the `next` exclusion, with no credentials of any kind.
+  build:
+    name: upstream harness builds on Linux
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          repository: coinbase/x402
+          ref: ${{ env.X402_REF }}
+          path: x402
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+
+      - name: Install the e2e workspace
+        working-directory: x402/e2e
+        run: pnpm install
+
+      # The scenario that could not run on Windows. `install.sh` / `build.sh` are upstream's own
+      # scripts, unmodified — if this step passes, the exclusion was a filesystem limit and not
+      # a defect, and the two `next` scenarios are unblocked for the `suite` job below.
+      - name: Build the next server (the MAX_PATH exclusion)
+        working-directory: x402/e2e/servers/next
+        run: |
+          set -euo pipefail
+          bash install.sh
+          bash build.sh
+
+      - name: Report
+        run: echo "next server built on ubuntu-latest at ${X402_REF} — the MAX_PATH exclusion is a Windows artifact."
+
+  # The full conformance run. Requires funded testnet accounts, which only a maintainer can
+  # provide; see docs/CONFORMANCE.md for exactly which.
+  suite:
+    name: upstream e2e against the Movo facilitator
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Check for the credentials this job cannot run without
+        id: creds
+        env:
+          BUYER: ${{ secrets.MOVO_E2E_STELLAR_PRIVATE_KEY }}
+          PAY_TO: ${{ secrets.MOVO_E2E_PAY_TO }}
+          SPONSORS: ${{ secrets.MOVO_FACILITATOR_TESTNET_SIGNER_SEEDS }}
+        run: |
+          set -euo pipefail
+          missing=""
+          [ -n "${BUYER:-}" ]    || missing="$missing MOVO_E2E_STELLAR_PRIVATE_KEY"
+          [ -n "${PAY_TO:-}" ]   || missing="$missing MOVO_E2E_PAY_TO"
+          [ -n "${SPONSORS:-}" ] || missing="$missing MOVO_FACILITATOR_TESTNET_SIGNER_SEEDS"
+          if [ -n "$missing" ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::warning title=Upstream e2e not run::UNVERIFIED — missing repository secrets:$missing. This job did not run the suite; it did not pass it."
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v5
+        if: steps.creds.outputs.ready == 'true'
+        with:
+          path: movo
+
+      - uses: actions/checkout@v5
+        if: steps.creds.outputs.ready == 'true'
+        with:
+          repository: coinbase/x402
+          ref: ${{ env.X402_REF }}
+          path: x402
+
+      - uses: pnpm/action-setup@v4
+        if: steps.creds.outputs.ready == 'true'
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v5
+        if: steps.creds.outputs.ready == 'true'
+        with:
+          node-version: 24
+
+      - name: Build Movo and start the facilitator
+        if: steps.creds.outputs.ready == 'true'
+        working-directory: movo
+        env:
+          MOVO_FACILITATOR_NETWORKS: stellar:testnet
+          MOVO_FACILITATOR_TESTNET_SIGNER_SEEDS: ${{ secrets.MOVO_FACILITATOR_TESTNET_SIGNER_SEEDS }}
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile
+          pnpm build
+          node apps/facilitator/dist/main.js &
+          for _ in $(seq 1 60); do
+            curl -sf http://127.0.0.1:8402/health && break
+            sleep 2
+          done
+          curl -sf http://127.0.0.1:8402/ready
+
+      # No `shell: win32` patch and no hand-written .env keys: the harness runs as upstream
+      # ships it. If either accommodation turns out to still be required on Linux, this step
+      # fails and the accommodation is re-disclosed rather than quietly reinstated.
+      - name: Run the upstream suite against the Movo facilitator
+        if: steps.creds.outputs.ready == 'true'
+        working-directory: x402/e2e
+        env:
+          CLIENT_STELLAR_PRIVATE_KEY: ${{ secrets.MOVO_E2E_STELLAR_PRIVATE_KEY }}
+          SERVER_STELLAR_ADDRESS: ${{ secrets.MOVO_E2E_PAY_TO }}
+          MOVO_FACILITATOR_URL: http://127.0.0.1:8402
+        run: |
+          set -euo pipefail
+          pnpm install:all
+          pnpm test --testnet --facilitators=movo --servers=${{ inputs.servers || 'express,fastify,hono,next' }}

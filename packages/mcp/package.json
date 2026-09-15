@@ -1,8 +1,17 @@
 {
   "name": "@movoframework/mcp",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "An MCP discovery server over the Stellar Bazaar catalog: bazaar.search, bazaar.get and a budget-capped bazaar.paidCall",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/movoframework/movo.git",
+    "directory": "packages/mcp"
+  },
+  "homepage": "https://github.com/movoframework/movo#readme",
+  "bugs": {
+    "url": "https://github.com/movoframework/movo/issues"
+  },
   "type": "module",
   "sideEffects": false,
   "engines": {

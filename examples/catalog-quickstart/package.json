@@ -1,6 +1,6 @@
 {
   "name": "@movoframework/example-catalog-quickstart",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "description": "A paid API that becomes discoverable by being paid once, with no registration step",
   "license": "Apache-2.0",

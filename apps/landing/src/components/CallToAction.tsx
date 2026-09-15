@@ -1,9 +1,12 @@
 import { REPO_URL } from "../repo.ts";
+import { useReveal } from "../useReveal.ts";
 
 export function CallToAction() {
+  const heading = useReveal<HTMLHeadingElement>();
+
   return (
     <section id="cta" className="cta gutter">
-      <h2 className="cta-heading">
+      <h2 ref={heading.ref} className={`cta-heading ${heading.className}`}>
         Clone the
         <br />
         repo.

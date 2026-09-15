@@ -39,6 +39,42 @@ a {
   color: inherit;
 }
 
+/* ---------- Motion ---------- */
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Scroll reveal: a plain IntersectionObserver toggles .reveal-visible once, no library. */
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity 0.6s ease,
+    transform 0.6s ease;
+  transition-delay: var(--reveal-delay, 0s);
+}
+
+.reveal-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
 .visually-hidden {
   position: absolute;
   width: 1px;
@@ -279,6 +315,26 @@ a {
   }
   .hero-meta-right {
     text-align: center;
+  }
+}
+
+/* Load-in only, guarded so there is nothing to override when motion is reduced rather than an
+   animation that needs cancelling. */
+@media (prefers-reduced-motion: no-preference) {
+  .nav {
+    animation: fade-up 0.5s ease both;
+  }
+
+  .hero-headline {
+    animation: fade-up 0.6s ease both;
+  }
+
+  .hero-sub {
+    animation: fade-up 0.6s ease 0.1s both;
+  }
+
+  .hero-meta {
+    animation: fade-up 0.6s ease 0.2s both;
   }
 }
 
@@ -630,7 +686,12 @@ a {
   padding-block: 28px;
   text-decoration: none;
   color: inherit;
-  transition: background 0.2s ease;
+  /* The reveal delay sits inline on each entry rather than on a shared transition-delay, so it
+     applies to the entrance only — hover's background transition stays at 0 delay always. */
+  transition:
+    background 0.2s ease,
+    opacity 0.6s ease var(--reveal-delay, 0s),
+    transform 0.6s ease var(--reveal-delay, 0s);
 }
 
 .services > a:last-child {
